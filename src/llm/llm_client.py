@@ -15,11 +15,15 @@ Uso:
 import json
 import os
 import re
+from pathlib import Path
 from typing import Optional
 
 import requests
+from dotenv import load_dotenv
 
 from src.utils.logger import get_logger
+
+load_dotenv(Path(__file__).parent.parent.parent / ".env")
 
 logger = get_logger(__name__)
 
@@ -84,45 +88,71 @@ class OllamaClient:
         system: Optional[str] = None,
         temperature: float = 0.2,
         max_tokens: int = 1024,
+        structured_output: bool = True,
     ) -> str:
         """
-        Envia um prompt ao modelo e retorna a resposta gerada.
+        Envia um prompt ao modelo via /api/chat (aplica template Llama 3
+        corretamente, garantindo que o system prompt seja respeitado).
 
         Args:
-            prompt: Texto da mensagem do usuário.
-            system: Mensagem de sistema (instruções gerais ao modelo).
-            temperature: Aleatoriedade da geração (0=determinístico, 1=criativo).
-                Para triagem de segurança usamos baixa temperatura para
-                respostas consistentes.
-            max_tokens: Limite de tokens da resposta.
-
-        Returns:
-            String com a resposta do modelo.
+            structured_output: se True (default) força JSON Schema da triagem.
+                Se False, retorna texto livre (usado pelo Stage 1 binário).
         """
+        messages = []
+        if system:
+            messages.append({"role": "system", "content": system})
+        messages.append({"role": "user", "content": prompt})
+
         payload = {
             "model": self.model,
-            "prompt": prompt,
+            "messages": messages,
             "stream": False,
             "options": {
                 "temperature": temperature,
                 "num_predict": max_tokens,
+                "num_ctx": 8192,
             },
         }
-        if system:
-            payload["system"] = system
+
+        if structured_output:
+            payload["format"] = {
+                "type": "object",
+                "properties": {
+                    "attack_type": {
+                        "type": "string",
+                        "enum": [
+                            "Benign", "DoS", "DDoS", "Brute Force", "Botnet",
+                            "Reconnaissance", "Web Attack", "Exploits", "Fuzzers",
+                            "Backdoor", "Generic", "Analysis", "Shellcode",
+                            "Worms", "Infiltration",
+                        ],
+                    },
+                    "severity": {
+                        "type": "string",
+                        "enum": ["informational", "low", "medium", "high", "critical"],
+                    },
+                    "confidence": {"type": "number", "minimum": 0.0, "maximum": 1.0},
+                    "mitre_techniques": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                    },
+                    "explanation": {"type": "string", "minLength": 20},
+                    "recommendations": {"type": "array", "items": {"type": "string"}},
+                },
+                "required": ["attack_type", "severity", "confidence", "mitre_techniques", "explanation", "recommendations"],
+            }
 
         try:
             r = requests.post(
-                f"{self.host}/api/generate",
+                f"{self.host}/api/chat",
                 json=payload,
                 timeout=self.timeout,
             )
             r.raise_for_status()
             data = r.json()
-            response = data.get("response", "")
+            response = data.get("message", {}).get("content", "")
 
-            # Log de métricas úteis
-            duration = data.get("total_duration", 0) / 1e9  # ns → s
+            duration = data.get("total_duration", 0) / 1e9
             tokens = data.get("eval_count", 0)
             if tokens > 0:
                 logger.debug(

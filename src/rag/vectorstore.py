@@ -5,6 +5,7 @@ Encapsula a criação da coleção, inserção de documentos
 e busca semântica, com persistência local em disco.
 """
 
+import shutil
 from pathlib import Path
 
 import chromadb
@@ -39,10 +40,22 @@ class VectorStore:
             name=self.collection_name,
             metadata={"hnsw:space": "cosine"},  # Distância cosseno
         )
+        try:
+            count = self.collection.count()
+        except Exception:
+            logger.warning("Índice ChromaDB corrompido — recriando banco de dados...")
+            del self.client
+            shutil.rmtree(self.persist_dir, ignore_errors=True)
+            self.client = chromadb.PersistentClient(path=self.persist_dir)
+            self.collection = self.client.get_or_create_collection(
+                name=self.collection_name,
+                metadata={"hnsw:space": "cosine"},
+            )
+            count = 0
         logger.info(
             f"ChromaDB inicializado em {self.persist_dir} "
             f"(coleção '{self.collection_name}', "
-            f"{self.collection.count()} documentos existentes)"
+            f"{count} documentos existentes)"
         )
 
     def add_documents(

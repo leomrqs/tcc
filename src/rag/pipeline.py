@@ -20,6 +20,7 @@ import time
 from src.rag.download import download_mitre, download_sigma, MITRE_FILE, SIGMA_DIR
 from src.rag.sources.mitre import parse_mitre_attack
 from src.rag.sources.sigma import parse_sigma_rules
+from src.rag.sources.ids_classes import parse_ids_classes
 from src.rag.embeddings import EmbeddingModel
 from src.rag.vectorstore import VectorStore
 from src.rag.retriever import Retriever
@@ -48,6 +49,11 @@ def run_pipeline(reset: bool = False, test: bool = False, skip_download: bool = 
     logger.info("=" * 60)
 
     all_documents = []
+
+    # IDS Class descriptions (curadoria interna — alta prioridade semântica)
+    ids_docs = parse_ids_classes()
+    all_documents.extend(ids_docs)
+    logger.info(f"  IDS Classes: {len(ids_docs)} documentos canônicos")
 
     # MITRE ATT&CK
     if MITRE_FILE.exists():

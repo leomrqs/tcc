@@ -23,6 +23,8 @@ UNIFIED_PROCESSED_FILE = PROCESSED_DIR / "unified_dataset.parquet"
 
 # ── Outputs ──
 OUTPUTS_DIR = PROJECT_ROOT / "outputs"
+TRIAGE_RUNS_DIR = OUTPUTS_DIR / "triage_runs"
+EVALUATION_DIR = OUTPUTS_DIR / "evaluation"
 
 # ── Parâmetros de pré-processamento ──
 
@@ -57,6 +59,10 @@ CIC_LABEL_MAP = {
     "Web Attack \u2013 Brute Force": "Brute Force",
     "Web Attack \u2013 XSS": "Web Attack",
     "Web Attack \u2013 Sql Injection": "Web Attack",
+    # Variantes com espa\u00e7o duplo (alguns arquivos CIC omitem o em-dash)
+    "Web Attack  Brute Force": "Brute Force",
+    "Web Attack  XSS": "Web Attack",
+    "Web Attack  Sql Injection": "Web Attack",
     "Infiltration": "Infiltration",
     "Bot": "Botnet",
     "PortScan": "Reconnaissance",
