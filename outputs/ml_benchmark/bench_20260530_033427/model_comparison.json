@@ -1,0 +1,736 @@
+[
+  {
+    "dataset": "CIC-IDS2017",
+    "dataset_key": "cic",
+    "n_total": 2830743,
+    "n_train": 2264594,
+    "n_test": 566149,
+    "n_features": 45,
+    "n_benign": 2273097,
+    "n_threat": 557646,
+    "seed": 42,
+    "best_model": "XGBoost",
+    "models": [
+      {
+        "model": "XGBoost",
+        "accuracy": 0.9990638506824175,
+        "balanced_accuracy": 0.9991971798427997,
+        "precision_threat": 0.99584558068061,
+        "recall_threat": 0.9994171919411095,
+        "f1_threat": 0.9976281896374263,
+        "roc_auc": 0.9999695022202965,
+        "pr_auc": 0.9998884551631149,
+        "confusion_matrix": [
+          [
+            454155,
+            465
+          ],
+          [
+            65,
+            111464
+          ]
+        ],
+        "benign_high_confidence_coverage": 0.9983436716378514,
+        "threat_misclassified_high_conf": 0.00017932555658169624,
+        "train_time_s": 35.94,
+        "predict_time_s": 0.556,
+        "predict_ms_per_1k": 0.982,
+        "family": "boosting",
+        "cv_folds": 5,
+        "cv_n": 60000,
+        "cv_f1_mean": 0.9962830827244581,
+        "cv_f1_std": 0.0008573418074356329,
+        "cv_roc_auc_mean": 0.9998754011500864,
+        "cv_roc_auc_std": 4.524721883512152e-05
+      },
+      {
+        "model": "Ensemble",
+        "accuracy": 0.9989825999869293,
+        "balanced_accuracy": 0.999139821501269,
+        "precision_threat": 0.9954541801002045,
+        "recall_threat": 0.9993992593854513,
+        "f1_threat": 0.9974228187919463,
+        "roc_auc": 0.9998590122432072,
+        "pr_auc": 0.9993672398287067,
+        "confusion_matrix": [
+          [
+            454111,
+            509
+          ],
+          [
+            67,
+            111462
+          ]
+        ],
+        "benign_high_confidence_coverage": 0.9512603932954995,
+        "threat_misclassified_high_conf": 6.276394480359369e-05,
+        "train_time_s": 0.0,
+        "predict_time_s": 3.993,
+        "predict_ms_per_1k": 7.054,
+        "family": "ensemble",
+        "members": [
+          "RandomForest",
+          "ExtraTrees",
+          "HistGradientBoosting",
+          "XGBoost",
+          "LightGBM"
+        ]
+      },
+      {
+        "model": "DecisionTree",
+        "accuracy": 0.998915479847178,
+        "balanced_accuracy": 0.9989322457103819,
+        "precision_threat": 0.9955500352959048,
+        "recall_threat": 0.9989599117718262,
+        "f1_threat": 0.9972520587182241,
+        "roc_auc": 0.9993015985402065,
+        "pr_auc": 0.9977077486536435,
+        "confusion_matrix": [
+          [
+            454122,
+            498
+          ],
+          [
+            116,
+            111413
+          ]
+        ],
+        "benign_high_confidence_coverage": 0.9988737846993093,
+        "threat_misclassified_high_conf": 0.0010221556725156687,
+        "train_time_s": 43.71,
+        "predict_time_s": 0.06,
+        "predict_ms_per_1k": 0.106,
+        "family": "tree",
+        "cv_folds": 5,
+        "cv_n": 60000,
+        "cv_f1_mean": 0.9908510930562574,
+        "cv_f1_std": 0.0012644731501816047,
+        "cv_roc_auc_mean": 0.9955461233923268,
+        "cv_roc_auc_std": 0.0008199361059723043
+      },
+      {
+        "model": "RandomForest",
+        "accuracy": 0.9988200985959527,
+        "balanced_accuracy": 0.998652939696862,
+        "precision_threat": 0.9956453704117674,
+        "recall_threat": 0.9983771037129356,
+        "f1_threat": 0.9970093658781183,
+        "roc_auc": 0.9999311274702601,
+        "pr_auc": 0.99977600066094,
+        "confusion_matrix": [
+          [
+            454133,
+            487
+          ],
+          [
+            181,
+            111348
+          ]
+        ],
+        "benign_high_confidence_coverage": 0.9941643570454446,
+        "threat_misclassified_high_conf": 0.00026898833487254436,
+        "train_time_s": 177.32,
+        "predict_time_s": 1.011,
+        "predict_ms_per_1k": 1.786,
+        "family": "bagging",
+        "cv_folds": 5,
+        "cv_n": 60000,
+        "cv_f1_mean": 0.9936901605927714,
+        "cv_f1_std": 0.001272847654547119,
+        "cv_roc_auc_mean": 0.999786184984537,
+        "cv_roc_auc_std": 0.00010442640605424922
+      },
+      {
+        "model": "LightGBM",
+        "accuracy": 0.9983255291451544,
+        "balanced_accuracy": 0.9985581393155321,
+        "precision_threat": 0.9926051977441398,
+        "recall_threat": 0.998941979216168,
+        "f1_threat": 0.9957635071725432,
+        "roc_auc": 0.9990667364855349,
+        "pr_auc": 0.9944513650609678,
+        "confusion_matrix": [
+          [
+            453790,
+            830
+          ],
+          [
+            118,
+            111411
+          ]
+        ],
+        "benign_high_confidence_coverage": 0.9963573973868286,
+        "threat_misclassified_high_conf": 0.0007352347819849546,
+        "train_time_s": 23.5,
+        "predict_time_s": 0.94,
+        "predict_ms_per_1k": 1.66,
+        "family": "boosting",
+        "cv_folds": 5,
+        "cv_n": 60000,
+        "cv_f1_mean": 0.99645057502286,
+        "cv_f1_std": 0.0003606761273929745,
+        "cv_roc_auc_mean": 0.9998978204266431,
+        "cv_roc_auc_std": 2.1303205604923446e-05
+      },
+      {
+        "model": "HistGradientBoosting",
+        "accuracy": 0.9981983541435205,
+        "balanced_accuracy": 0.9985804518807511,
+        "precision_threat": 0.9917061927687256,
+        "recall_threat": 0.9992109675510406,
+        "f1_threat": 0.995444435511965,
+        "roc_auc": 0.9999168277935113,
+        "pr_auc": 0.9992226745259376,
+        "confusion_matrix": [
+          [
+            453688,
+            932
+          ],
+          [
+            88,
+            111441
+          ]
+        ],
+        "benign_high_confidence_coverage": 0.9939245963661959,
+        "threat_misclassified_high_conf": 0.00017035927875261143,
+        "train_time_s": 17.82,
+        "predict_time_s": 0.88,
+        "predict_ms_per_1k": 1.555,
+        "family": "boosting",
+        "cv_folds": 5,
+        "cv_n": 60000,
+        "cv_f1_mean": 0.9951051736164537,
+        "cv_f1_std": 0.0006927171996045109,
+        "cv_roc_auc_mean": 0.9998739700390316,
+        "cv_roc_auc_std": 5.837090041949256e-05
+      },
+      {
+        "model": "KNN",
+        "accuracy": 0.9913273714163586,
+        "balanced_accuracy": 0.9872411661739668,
+        "precision_threat": 0.9755997466299101,
+        "recall_threat": 0.9804983457217405,
+        "f1_threat": 0.9780429124667961,
+        "roc_auc": 0.9980988650359615,
+        "pr_auc": 0.9940963600696479,
+        "confusion_matrix": [
+          [
+            451885,
+            2735
+          ],
+          [
+            2175,
+            109354
+          ]
+        ],
+        "benign_high_confidence_coverage": 0.9683779860102943,
+        "threat_misclassified_high_conf": 0.002528490347801917,
+        "train_time_s": 0.06,
+        "predict_time_s": 38.786,
+        "predict_ms_per_1k": 68.509,
+        "family": "instance",
+        "cv_folds": 5,
+        "cv_n": 60000,
+        "cv_f1_mean": 0.9686769749476852,
+        "cv_f1_std": 0.0017372631046175284,
+        "cv_roc_auc_mean": 0.9970551422015157,
+        "cv_roc_auc_std": 0.0005196004308538436
+      },
+      {
+        "model": "MLP",
+        "accuracy": 0.9843822032715769,
+        "balanced_accuracy": 0.9752128573785978,
+        "precision_threat": 0.9606161464828156,
+        "recall_threat": 0.9600821311049145,
+        "f1_threat": 0.9603490645572118,
+        "roc_auc": 0.9982616719878554,
+        "pr_auc": 0.9938884904533432,
+        "confusion_matrix": [
+          [
+            450230,
+            4390
+          ],
+          [
+            4452,
+            107077
+          ]
+        ],
+        "benign_high_confidence_coverage": 0.9477893625445427,
+        "threat_misclassified_high_conf": 0.003864465744335554,
+        "train_time_s": 22.89,
+        "predict_time_s": 0.417,
+        "predict_ms_per_1k": 0.737,
+        "family": "neural",
+        "cv_folds": 5,
+        "cv_n": 60000,
+        "cv_f1_mean": 0.9575466240915883,
+        "cv_f1_std": 0.0029882909534267366,
+        "cv_roc_auc_mean": 0.9972704278372347,
+        "cv_roc_auc_std": 0.0007792387167449885
+      },
+      {
+        "model": "ExtraTrees",
+        "accuracy": 0.9826123511655059,
+        "balanced_accuracy": 0.9855769071664928,
+        "precision_threat": 0.926362927369242,
+        "recall_threat": 0.9904688466676829,
+        "f1_threat": 0.9573439179117412,
+        "roc_auc": 0.9986236587606971,
+        "pr_auc": 0.9952429297313367,
+        "confusion_matrix": [
+          [
+            445839,
+            8781
+          ],
+          [
+            1063,
+            110466
+          ]
+        ],
+        "benign_high_confidence_coverage": 0.7938674057454578,
+        "threat_misclassified_high_conf": 0.00033175227967613803,
+        "train_time_s": 115.13,
+        "predict_time_s": 1.074,
+        "predict_ms_per_1k": 1.897,
+        "family": "bagging",
+        "cv_folds": 5,
+        "cv_n": 60000,
+        "cv_f1_mean": 0.95814610395653,
+        "cv_f1_std": 0.0028925332766200494,
+        "cv_roc_auc_mean": 0.9990190216608756,
+        "cv_roc_auc_std": 0.0001692559740795382
+      },
+      {
+        "model": "LogisticRegression",
+        "accuracy": 0.8837284884367896,
+        "balanced_accuracy": 0.9123738531419756,
+        "precision_threat": 0.6357318507430771,
+        "recall_threat": 0.9596427834912893,
+        "f1_threat": 0.7648052936405569,
+        "roc_auc": 0.9735281603776542,
+        "pr_auc": 0.9093633795344785,
+        "confusion_matrix": [
+          [
+            393294,
+            61326
+          ],
+          [
+            4501,
+            107028
+          ]
+        ],
+        "benign_high_confidence_coverage": 0.6349984602525186,
+        "threat_misclassified_high_conf": 0.002815411238332631,
+        "train_time_s": 25.17,
+        "predict_time_s": 0.121,
+        "predict_ms_per_1k": 0.214,
+        "family": "linear",
+        "cv_folds": 5,
+        "cv_n": 60000,
+        "cv_f1_mean": 0.78276493549709,
+        "cv_f1_std": 0.02774606728489053,
+        "cv_roc_auc_mean": 0.972772629289909,
+        "cv_roc_auc_std": 0.0017841499390920117
+      },
+      {
+        "model": "GaussianNB",
+        "accuracy": 0.6837970216321145,
+        "balanced_accuracy": 0.7960751854389934,
+        "precision_threat": 0.382171676787005,
+        "recall_threat": 0.9813501421155036,
+        "f1_threat": 0.5501110787201319,
+        "roc_auc": 0.8348890010759017,
+        "pr_auc": 0.42929361923474163,
+        "confusion_matrix": [
+          [
+            277682,
+            176938
+          ],
+          [
+            2080,
+            109449
+          ]
+        ],
+        "benign_high_confidence_coverage": 0.6099027759447451,
+        "threat_misclassified_high_conf": 0.01864985788449641,
+        "train_time_s": 2.19,
+        "predict_time_s": 0.465,
+        "predict_ms_per_1k": 0.822,
+        "family": "probabilistic",
+        "cv_folds": 5,
+        "cv_n": 60000,
+        "cv_f1_mean": 0.5573667136423539,
+        "cv_f1_std": 0.009057280369479304,
+        "cv_roc_auc_mean": 0.8571275739805397,
+        "cv_roc_auc_std": 0.02114456879776822
+      }
+    ]
+  },
+  {
+    "dataset": "UNSW-NB15",
+    "dataset_key": "unsw",
+    "n_total": 2540047,
+    "n_train": 2032037,
+    "n_test": 508010,
+    "n_features": 35,
+    "n_benign": 2218764,
+    "n_threat": 321283,
+    "seed": 42,
+    "best_model": "XGBoost",
+    "models": [
+      {
+        "model": "XGBoost",
+        "accuracy": 0.9930473809570678,
+        "balanced_accuracy": 0.9942901384759122,
+        "precision_threat": 0.951359467213724,
+        "recall_threat": 0.9959537482297649,
+        "f1_threat": 0.9731459939479646,
+        "roc_auc": 0.999846031104611,
+        "pr_auc": 0.9989512104469552,
+        "confusion_matrix": [
+          [
+            440481,
+            3272
+          ],
+          [
+            260,
+            63997
+          ]
+        ],
+        "benign_high_confidence_coverage": 0.9861747413538613,
+        "threat_misclassified_high_conf": 4.6687520425790186e-05,
+        "train_time_s": 25.89,
+        "predict_time_s": 0.474,
+        "predict_ms_per_1k": 0.932,
+        "family": "boosting",
+        "cv_folds": 5,
+        "cv_n": 60000,
+        "cv_f1_mean": 0.9670702682155466,
+        "cv_f1_std": 0.0020005108211343515,
+        "cv_roc_auc_mean": 0.99959217123521,
+        "cv_roc_auc_std": 3.598155281652452e-05
+      },
+      {
+        "model": "RandomForest",
+        "accuracy": 0.9926950256884707,
+        "balanced_accuracy": 0.9926311140982066,
+        "precision_threat": 0.9517683927771974,
+        "recall_threat": 0.9925455592386822,
+        "f1_threat": 0.9717293760046318,
+        "roc_auc": 0.9997645416178316,
+        "pr_auc": 0.9984824465562477,
+        "confusion_matrix": [
+          [
+            440521,
+            3232
+          ],
+          [
+            479,
+            63778
+          ]
+        ],
+        "benign_high_confidence_coverage": 0.9859786863412754,
+        "threat_misclassified_high_conf": 3.112501361719346e-05,
+        "train_time_s": 85.36,
+        "predict_time_s": 0.72,
+        "predict_ms_per_1k": 1.417,
+        "family": "bagging",
+        "cv_folds": 5,
+        "cv_n": 60000,
+        "cv_f1_mean": 0.9673235233466336,
+        "cv_f1_std": 0.0024056968890343996,
+        "cv_roc_auc_mean": 0.9995873869930005,
+        "cv_roc_auc_std": 3.519651599498698e-05
+      },
+      {
+        "model": "DecisionTree",
+        "accuracy": 0.9925749493120214,
+        "balanced_accuracy": 0.9889489884195942,
+        "precision_threat": 0.9583238614836705,
+        "recall_threat": 0.9840951180416141,
+        "f1_threat": 0.9710385282781284,
+        "roc_auc": 0.9915176303134798,
+        "pr_auc": 0.9772211167238837,
+        "confusion_matrix": [
+          [
+            441003,
+            2750
+          ],
+          [
+            1022,
+            63235
+          ]
+        ],
+        "benign_high_confidence_coverage": 0.9932552568658691,
+        "threat_misclassified_high_conf": 0.01546913176774515,
+        "train_time_s": 9.1,
+        "predict_time_s": 0.06,
+        "predict_ms_per_1k": 0.117,
+        "family": "tree",
+        "cv_folds": 5,
+        "cv_n": 60000,
+        "cv_f1_mean": 0.9551025497865571,
+        "cv_f1_std": 0.0034563182545019875,
+        "cv_roc_auc_mean": 0.9748520666801832,
+        "cv_roc_auc_std": 0.003113649363333444
+      },
+      {
+        "model": "LightGBM",
+        "accuracy": 0.9914686718765379,
+        "balanced_accuracy": 0.9942182951706042,
+        "precision_threat": 0.938540126754585,
+        "recall_threat": 0.9978990615808394,
+        "f1_threat": 0.9673098100740696,
+        "roc_auc": 0.9997710322878472,
+        "pr_auc": 0.9987792617897441,
+        "confusion_matrix": [
+          [
+            439554,
+            4199
+          ],
+          [
+            135,
+            64122
+          ]
+        ],
+        "benign_high_confidence_coverage": 0.9859899538707344,
+        "threat_misclassified_high_conf": 0.00015562506808596729,
+        "train_time_s": 12.99,
+        "predict_time_s": 0.731,
+        "predict_ms_per_1k": 1.438,
+        "family": "boosting",
+        "cv_folds": 5,
+        "cv_n": 60000,
+        "cv_f1_mean": 0.967416437894698,
+        "cv_f1_std": 0.0023659531550554447,
+        "cv_roc_auc_mean": 0.999601939540179,
+        "cv_roc_auc_std": 3.85258616674513e-05
+      },
+      {
+        "model": "Ensemble",
+        "accuracy": 0.9906025471939529,
+        "balanced_accuracy": 0.9940885213996222,
+        "precision_threat": 0.9318435916423459,
+        "recall_threat": 0.9987549994553122,
+        "f1_threat": 0.9641397752538909,
+        "roc_auc": 0.9998344078230352,
+        "pr_auc": 0.9988716585251222,
+        "confusion_matrix": [
+          [
+            439059,
+            4694
+          ],
+          [
+            80,
+            64177
+          ]
+        ],
+        "benign_high_confidence_coverage": 0.9858592505290105,
+        "threat_misclassified_high_conf": 1.556250680859673e-05,
+        "train_time_s": 0.0,
+        "predict_time_s": 3.031,
+        "predict_ms_per_1k": 5.967,
+        "family": "ensemble",
+        "members": [
+          "RandomForest",
+          "ExtraTrees",
+          "HistGradientBoosting",
+          "XGBoost",
+          "LightGBM"
+        ]
+      },
+      {
+        "model": "MLP",
+        "accuracy": 0.9901557055963466,
+        "balanced_accuracy": 0.9809363265925194,
+        "precision_threat": 0.954263898684493,
+        "recall_threat": 0.9685948612602518,
+        "f1_threat": 0.9613759760270005,
+        "roc_auc": 0.9993701951834911,
+        "pr_auc": 0.9961857999675133,
+        "confusion_matrix": [
+          [
+            440770,
+            2983
+          ],
+          [
+            2018,
+            62239
+          ]
+        ],
+        "benign_high_confidence_coverage": 0.9858412224818762,
+        "threat_misclassified_high_conf": 0.00017118757489456403,
+        "train_time_s": 12.43,
+        "predict_time_s": 0.376,
+        "predict_ms_per_1k": 0.74,
+        "family": "neural",
+        "cv_folds": 5,
+        "cv_n": 60000,
+        "cv_f1_mean": 0.9582801924868332,
+        "cv_f1_std": 0.002640464475025051,
+        "cv_roc_auc_mean": 0.9993217718171937,
+        "cv_roc_auc_std": 6.687470116990687e-05
+      },
+      {
+        "model": "HistGradientBoosting",
+        "accuracy": 0.9888801401547214,
+        "balanced_accuracy": 0.993355483589383,
+        "precision_threat": 0.9196957978860532,
+        "recall_threat": 0.999346374714039,
+        "f1_threat": 0.9578681225247802,
+        "roc_auc": 0.9997660804982421,
+        "pr_auc": 0.9984079539896232,
+        "confusion_matrix": [
+          [
+            438146,
+            5607
+          ],
+          [
+            42,
+            64215
+          ]
+        ],
+        "benign_high_confidence_coverage": 0.9857172796578276,
+        "threat_misclassified_high_conf": 0.0,
+        "train_time_s": 11.72,
+        "predict_time_s": 0.676,
+        "predict_ms_per_1k": 1.33,
+        "family": "boosting",
+        "cv_folds": 5,
+        "cv_n": 60000,
+        "cv_f1_mean": 0.9617484736877383,
+        "cv_f1_std": 0.0022200474974785156,
+        "cv_roc_auc_mean": 0.9995744237437998,
+        "cv_roc_auc_std": 4.813432767779312e-05
+      },
+      {
+        "model": "ExtraTrees",
+        "accuracy": 0.9882423574339088,
+        "balanced_accuracy": 0.9930835786413305,
+        "precision_threat": 0.9152820132812722,
+        "recall_threat": 0.9995642498093593,
+        "f1_threat": 0.9555682841011374,
+        "roc_auc": 0.9996574722948373,
+        "pr_auc": 0.997668676682987,
+        "confusion_matrix": [
+          [
+            437808,
+            5945
+          ],
+          [
+            28,
+            64229
+          ]
+        ],
+        "benign_high_confidence_coverage": 0.9858457294936598,
+        "threat_misclassified_high_conf": 3.112501361719346e-05,
+        "train_time_s": 61.94,
+        "predict_time_s": 0.738,
+        "predict_ms_per_1k": 1.453,
+        "family": "bagging",
+        "cv_folds": 5,
+        "cv_n": 60000,
+        "cv_f1_mean": 0.9583319767287772,
+        "cv_f1_std": 0.002330534021676248,
+        "cv_roc_auc_mean": 0.9994811236057135,
+        "cv_roc_auc_std": 4.59202463024026e-05
+      },
+      {
+        "model": "KNN",
+        "accuracy": 0.9885336902816874,
+        "balanced_accuracy": 0.9773394274812819,
+        "precision_threat": 0.9477959659125743,
+        "recall_threat": 0.9623542960300046,
+        "f1_threat": 0.9550196523578969,
+        "roc_auc": 0.9991452760980625,
+        "pr_auc": 0.9928765628391748,
+        "confusion_matrix": [
+          [
+            440347,
+            3406
+          ],
+          [
+            2419,
+            61838
+          ]
+        ],
+        "benign_high_confidence_coverage": 0.9847009485006298,
+        "threat_misclassified_high_conf": 0.0001089375476601771,
+        "train_time_s": 0.06,
+        "predict_time_s": 30.645,
+        "predict_ms_per_1k": 60.323,
+        "family": "instance",
+        "cv_folds": 5,
+        "cv_n": 60000,
+        "cv_f1_mean": 0.953894707421181,
+        "cv_f1_std": 0.004084310132288643,
+        "cv_roc_auc_mean": 0.9988289054422136,
+        "cv_roc_auc_std": 0.0002733708381991404
+      },
+      {
+        "model": "LogisticRegression",
+        "accuracy": 0.986939233479656,
+        "balanced_accuracy": 0.9918252716558505,
+        "precision_threat": 0.9076143855578507,
+        "recall_threat": 0.9983659367850973,
+        "f1_threat": 0.9508296341309777,
+        "roc_auc": 0.9988708633150221,
+        "pr_auc": 0.9889974118938164,
+        "confusion_matrix": [
+          [
+            437223,
+            6530
+          ],
+          [
+            105,
+            64152
+          ]
+        ],
+        "benign_high_confidence_coverage": 0.9832226486356148,
+        "threat_misclassified_high_conf": 0.00018675008170316074,
+        "train_time_s": 10.94,
+        "predict_time_s": 0.119,
+        "predict_ms_per_1k": 0.235,
+        "family": "linear",
+        "cv_folds": 5,
+        "cv_n": 60000,
+        "cv_f1_mean": 0.9526749262749721,
+        "cv_f1_std": 0.003059618517388765,
+        "cv_roc_auc_mean": 0.998915610841966,
+        "cv_roc_auc_std": 0.00018833360688569076
+      },
+      {
+        "model": "GaussianNB",
+        "accuracy": 0.8975630400976359,
+        "balanced_accuracy": 0.9352494175272679,
+        "precision_threat": 0.5533732897656782,
+        "recall_threat": 0.9856980562428996,
+        "f1_threat": 0.7088157121674173,
+        "roc_auc": 0.9771727151094987,
+        "pr_auc": 0.8071539517410401,
+        "confusion_matrix": [
+          [
+            392633,
+            51120
+          ],
+          [
+            919,
+            63338
+          ]
+        ],
+        "benign_high_confidence_coverage": 0.8841855717031772,
+        "threat_misclassified_high_conf": 0.013492693403053363,
+        "train_time_s": 1.75,
+        "predict_time_s": 0.377,
+        "predict_ms_per_1k": 0.743,
+        "family": "probabilistic",
+        "cv_folds": 5,
+        "cv_n": 60000,
+        "cv_f1_mean": 0.7118572598067258,
+        "cv_f1_std": 0.0031690115240532446,
+        "cv_roc_auc_mean": 0.977954400300538,
+        "cv_roc_auc_std": 0.0019962950674151207
+      }
+    ]
+  }
+]

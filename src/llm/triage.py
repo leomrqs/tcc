@@ -32,9 +32,7 @@ from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
-# ════════════════════════════════════════════════════════════════
 # Normalização de attack_type
-# ════════════════════════════════════════════════════════════════
 
 _ATTACK_TYPE_MAP = {
     # Exact valid values
@@ -81,9 +79,7 @@ def _normalize_attack_type(raw: str) -> str:
     return "Generic"
 
 
-# ════════════════════════════════════════════════════════════════
 # TriageResult
-# ════════════════════════════════════════════════════════════════
 
 @dataclass
 class TriageResult:
@@ -122,9 +118,7 @@ class TriageResult:
         return len(self.validation_errors) == 0
 
 
-# ════════════════════════════════════════════════════════════════
 # Engine de triagem
-# ════════════════════════════════════════════════════════════════
 
 class TriageEngine:
     """

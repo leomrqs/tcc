@@ -7,17 +7,28 @@ Turma 7B — Grupo 3
 
 ## Visão Geral
 
-Sistema **100% local** de triagem automática de incidentes de rede que combina:
+Sistema **100% local** de triagem automática de incidentes de rede. A arquitetura
+combina duas camadas complementares: um **classificador clássico de ML** que filtra,
+com rigor estatístico, o tráfego benigno óbvio; e um **LLM especializado** que produz
+a triagem **explicada** (categoria + severidade + técnicas MITRE + justificativa +
+recomendações) dos casos que importam, contextualizada por RAG local.
 
+- **Estudo comparativo de ML** (Benign vs Threat): até 10 modelos clássicos
+  (RandomForest, ExtraTrees, HistGradientBoosting, **XGBoost**, **LightGBM**,
+  DecisionTree, LogisticRegression, GaussianNB, KNN, MLP) + **ensemble por soft-voting**,
+  treinados nos datasets completos com cross-validation (média ± desvio), ROC-AUC e PR-AUC
 - **LLM especializado em cibersegurança** (Foundation-Sec-8B-Instruct via Ollama) com prompt chain-of-thought + few-shot examples
 - **RAG local** com MITRE ATT&CK Enterprise (691 técnicas) + Sigma Rules (3.728 regras) + **base curada de descrições de classes IDS** (16 docs canônicos)
 - **Cross-encoder re-ranking** (`ms-marco-MiniLM-L-6-v2`) para melhorar a qualidade dos top-K do RAG
-- **Pre-classificador Random Forest** (99.8% acc CIC, 99.1% acc UNSW) para filtrar Benigns óbvios antes do LLM
-- **Two-stage classification** opt-in (binário rápido + categoria detalhada)
-- **Dois datasets de benchmark**: CIC-IDS2017 (~3.1M registros) e UNSW-NB15 (~2.5M registros)
-- **Bateria de avaliação automatizada**: 6 configurações × N tamanhos × seeds com ranking final
+- **Pré-classificador** (RF, melhor modelo ou ensemble) para filtrar Benigns óbvios antes do LLM
+- **Avaliação rica**: métricas por classe, matriz de confusão, agregação de runs (pool de
+  registros para N relevante) e **scoring automático da qualidade das explicações**
+  (validade MITRE, relevância, consistência, ancoragem no RAG)
+- **Dois datasets de benchmark**: CIC-IDS2017 (~2.8M registros) e UNSW-NB15 (~2.5M registros)
+- **Baterias automatizadas** com progresso/ETA sempre visível no terminal e saída em
+  formato agregável (manifesto JSONL pronto para pandas)
 
-Nenhum dado sai da máquina — LLM, embeddings, RF e base vetorial rodam localmente.
+Nenhum dado sai da máquina — LLM, embeddings, modelos de ML e base vetorial rodam localmente.
 
 ---
 
@@ -42,8 +53,17 @@ tcc/
 │   │   ├── vectorstore.py          # Wrapper ChromaDB (cosine similarity)
 │   │   ├── retriever.py            # Busca semântica + cross-encoder re-rank (top-20 → top-5)
 │   │   └── pipeline.py             # Orquestrador CLI da Etapa 2
-│   ├── ml/                         # Pre-classificador clássico
-│   │   └── preclassifier.py        # Random Forest binário (Benign vs Threat)
+│   ├── ml/                         # Classificadores clássicos (Benign vs Threat)
+│   │   ├── models.py               # Registry de modelos + ensemble soft-voting + prep de features
+│   │   ├── benchmark.py            # Estudo comparativo (CV, ROC-AUC, plots, relatórios)
+│   │   └── preclassifier.py        # Treino RF (atalho) + PreClassifier (rf/best/ensemble)
+│   ├── evaluation/                 # Avaliação e análise de resultados
+│   │   ├── metrics.py              # Métricas por classe, confusão, agregação de runs
+│   │   ├── explanation_quality.py  # Scoring automático da qualidade das explicações
+│   │   └── runlog.py               # Persistência padronizada (schema v3 + manifesto JSONL)
+│   ├── utils/
+│   │   ├── logger.py               # Logger padronizado (UTF-8)
+│   │   └── progress.py             # Progresso/ETA das baterias
 │   └── llm/                        # Etapa 3: triagem com LLM
 │       ├── text_converter.py       # v2: features categóricas (FLOOD/HIGH/...) + assinaturas
 │       ├── llm_client.py           # Cliente HTTP para Ollama (/api/chat + JSON schema)
@@ -80,12 +100,10 @@ tcc/
 │           ├── benchmark.log
 │           ├── summary.json        # Todas as runs detalhadas
 │           └── ranking.json        # Ranking final por configuração
-├── knowledge/                      # Documentação para o TCC
 ├── run_evaluation.ps1              # Script: RAG + no-RAG sequencial
 ├── run_benchmark.ps1               # Bateria 2-3h: 6 configs × tamanhos × seeds
 ├── .env                            # Configuração local (não versionar)
 ├── requirements.txt
-├── CLAUDE.md                       # Documentação técnica interna (para Claude)
 └── README.md
 ```
 
@@ -229,31 +247,66 @@ Os testes de busca validam a qualidade do RAG com 8 queries de cibersegurança (
 
 ---
 
-## Etapa 2.5 — Pre-classificador Random Forest (opcional, mas recomendado)
+## Etapa 2.5 — Classificadores clássicos e estudo comparativo
 
-O pre-classificador RF filtra Benigns óbvios antes do LLM, resolvendo o problema de TN=0
-e acelerando muito a triagem.
+A camada de ML clássico filtra o tráfego benigno óbvio antes do LLM, resolvendo o
+problema de TN=0 e acelerando a triagem. Como esse filtro carrega boa parte do
+desempenho do sistema, ele é tratado como objeto de estudo: um **benchmark de até 10
+modelos** treinados nos datasets completos, com cross-validation e métricas robustas.
 
-### 2.5.1 Treinar os modelos
+### 2.5.1 Treinar e comparar todos os modelos
 
 ```powershell
-# Treina RF binário (Benign vs Threat) para CIC e UNSW separadamente (~2 min)
-python -m src.ml.preclassifier --sample-size 200000
+# Estudo comparativo completo (CIC + UNSW), amostra 200k/dataset, CV 5-fold (~10-30 min)
+python -m src.ml.benchmark
 
-# Usar todos os registros (mais lento, marginalmente melhor)
-python -m src.ml.preclassifier --sample-size 0
+# Datasets completos (todos os registros — varias horas)
+python -m src.ml.benchmark --sample-size 0
+
+# Mais rápido: pula KNN e MLP (os mais lentos)
+python -m src.ml.benchmark --no-slow --cv-folds 3
+
+# Bateria via script (cabeçalho + progresso/ETA no terminal)
+.\run_ml_benchmark.ps1
+.\run_ml_benchmark.ps1 -Full          # datasets completos
+.\run_ml_benchmark.ps1 -NoSlow
 ```
 
-### 2.5.2 Saída
+Atalho legado (treina só o Random Forest, sem comparação):
+
+```powershell
+python -m src.ml.preclassifier --sample-size 200000
+```
+
+### 2.5.2 Modelos avaliados
+
+RandomForest, ExtraTrees, HistGradientBoosting, XGBoost, LightGBM, DecisionTree,
+LogisticRegression, GaussianNB, KNN, MLP, e um **Ensemble** (soft-voting dos melhores).
+XGBoost e LightGBM entram automaticamente se instalados; caso contrário o benchmark
+usa só os modelos do scikit-learn.
+
+### 2.5.3 Saída
 
 ```
 data/ml_models/
-├── rf_cic.joblib       # Acurácia ~99.8%, captura ~98% dos Benigns com conf≥95%
-├── rf_unsw.joblib      # Acurácia ~99.1%, captura ~98% dos Benigns com conf≥95%
-└── rf_meta.json        # Métricas detalhadas dos treinos
+├── rf_<ds>.joblib        # Random Forest (compatível com o pipeline)
+├── best_<ds>.joblib      # Melhor modelo do benchmark (por F1)
+├── ensemble_<ds>.joblib  # Ensemble soft-voting
+└── rf_meta.json          # Métricas resumidas do RF
+
+outputs/ml_benchmark/bench_<timestamp>/
+├── model_comparison.json # Métricas completas de todos os modelos
+├── model_comparison.md   # Tabela comparativa pronta para o manuscrito
+├── metrics_<ds>.png      # Barras F1 / ROC-AUC por modelo
+├── roc_<ds>.png          # Curvas ROC sobrepostas
+├── confusion_<ds>.png    # Matriz de confusão do melhor modelo
+└── importance_<ds>.png   # Top-15 features (modelo de árvore)
 ```
 
-**Risco controlado**: 0.04% das ameaças são mal classificadas como Benign com conf≥95%.
+Os ensembles de árvore atingem ROC-AUC ~0.999 (CIC) e capturam ~98% dos Benigns com
+conf≥95%; modelos lineares e Naive Bayes ficam bem abaixo — evidência de que as
+features de fluxo são fortemente não-lineares. **Risco controlado**: ~0.04% das
+ameaças são classificadas como Benign com conf≥95%.
 
 ---
 
@@ -323,8 +376,10 @@ python -m src.llm.pipeline --n 20 --output outputs/meu_teste.json
 | `--seed N` | aleatório | Seed da amostragem (reprodutibilidade) |
 | `--no-rag` | false | Desativa RAG (baseline) |
 | `--no-rerank` | false | Desativa cross-encoder re-rank (RAG denso direto) |
-| `--use-rf` | false | Ativa pre-classificador Random Forest |
-| `--rf-threshold 0.95` | 0.95 | Confiança mínima do RF para skipar LLM |
+| `--use-rf` | false | Ativa o pré-classificador clássico |
+| `--clf-kind {rf,best,ensemble}` | rf | Variante do pré-classificador a usar |
+| `--rf-threshold 0.95` | 0.95 | Confiança mínima do classificador para skipar LLM |
+| `--run-dir PATH` | outputs/triage_runs | Pasta base onde salvar a run |
 | `--two-stage` | false | Ativa Stage 1 binário (Benign/Threat rápido) |
 | `--rag-threshold 0.55` | 0.55 | Threshold de descarte do RAG (distância densa) |
 | `--top-k N` | 5 | Quantos docs RAG buscar |
@@ -433,10 +488,36 @@ Tempo médio por triagem: 20.34s
 
 ---
 
+## Avaliação e Análise de Resultados
+
+Cada run de triagem grava um `results.json` no **schema v3** (blocos `run`, `summary`,
+`metrics`, `explanation_quality`, `records`) e adiciona uma linha ao manifesto
+`outputs/triage_runs/runs_index.jsonl`. O manifesto é a "pilha de dados" do projeto —
+uma linha achatada por run, pronta para `pandas.read_json(..., lines=True)`.
+
+```powershell
+# Métricas detalhadas de uma run (por classe + matriz de confusão + gráficos)
+python -m src.evaluation.metrics outputs/triage_runs/run_...
+
+# Agregar várias runs (pool de registros -> N estatisticamente relevante)
+python -m src.evaluation.metrics --aggregate "outputs/triage_runs/*rag-rerank-rf*"
+
+# Qualidade das explicações (validade MITRE, relevância, consistência, ancoragem)
+python -m src.evaluation.explanation_quality outputs/triage_runs/run_...
+```
+
+Carregar o manifesto para análise/gráficos:
+
+```python
+import pandas as pd
+df = pd.read_json("outputs/triage_runs/runs_index.jsonl", lines=True)
+df.groupby("config")[["accuracy_binary", "f1", "explanation_composite"]].mean()
+```
+
 ## Testes
 
 ```powershell
-# Rodar todos os 78 testes unitários
+# Rodar todos os testes unitários (97)
 python -m pytest tests/ -v
 
 # Só um módulo
@@ -450,6 +531,9 @@ Cobertura de testes:
 - `test_llm_client.py` — parsing de JSON do LLM (com trailing commas, preambles, etc.)
 - `test_pipeline_helpers.py` — amostragem estratificada, matching de labels
 - `test_preprocessor.py` — limpeza, normalização, correlação
+- `test_rag_parsing.py` — parsing de fontes RAG (MITRE/Sigma)
+- `test_ml_models.py` — prep de features, registry de modelos, ensemble soft-voting
+- `test_evaluation.py` — métricas, qualidade das explicações, runlog, progresso
 
 ---
 
@@ -531,8 +615,9 @@ python -m src.rag.download
 # ── 5. Indexar base RAG com classes IDS curadas (~2 min, uma vez OU após mudar fontes) ──
 python -m src.rag.pipeline --reset --skip-download
 
-# ── 6. Treinar Random Forest (~2 min, uma vez OU após re-processar dados) ──
-python -m src.ml.preclassifier --sample-size 200000
+# ── 6. Treinar e comparar os classificadores de ML (~10-30 min, gera ensemble) ──
+python -m src.ml.benchmark
+# (atalho rápido só do RF: python -m src.ml.preclassifier --sample-size 200000)
 
 # ── 7. Registrar o modelo Foundation-Sec no Ollama (uma vez) ──
 # Baixar GGUF (~8.5GB):
@@ -570,10 +655,16 @@ python -m pytest tests/ -v
 
 ## Próximas Etapas (Etapa 4)
 
+- Bateria longa com múltiplos seeds e datasets separados (CIC-only, UNSW-only) para
+  resultados com significância estatística no manuscrito
+- Avaliação **humana** das explicações (20-30 casos) complementando o scoring automático
+  de `src/evaluation/explanation_quality.py`
 - `src/app/` — Interface Streamlit para demonstração interativa
-- `src/evaluation/` — Módulo de métricas quantitativas completo (matriz de confusão, curva ROC, análise por classe)
-- Análise qualitativa das explicações geradas (coerência, relevância das técnicas MITRE)
-- Manuscrito final do TCC
+- Manuscrito final do TCC com a tabela comparativa de modelos e o ablation study do LLM
+
+> Já implementado nesta etapa: estudo comparativo de modelos (`src/ml/benchmark.py`),
+> módulo de métricas quantitativas com matriz de confusão / ROC / análise por classe
+> (`src/evaluation/metrics.py`) e scoring automático das explicações.
 
 ---
 

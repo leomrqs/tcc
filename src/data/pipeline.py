@@ -247,9 +247,7 @@ def _log_unified_distribution(df: pd.DataFrame):
             logger.info(f"    {label}: {count}")
 
 
-# ════════════════════════════════════════════════════════════════
 # CLI
-# ════════════════════════════════════════════════════════════════
 
 def main():
     parser = argparse.ArgumentParser(

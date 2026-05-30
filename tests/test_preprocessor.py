@@ -20,9 +20,7 @@ from src.data.preprocessor import (
 )
 
 
-# ════════════════════════════════════════════════════════════════
 # Fixtures: dados sintéticos que imitam cada dataset
-# ════════════════════════════════════════════════════════════════
 
 
 @pytest.fixture
@@ -85,9 +83,7 @@ def fake_unsw_df():
     })
 
 
-# ════════════════════════════════════════════════════════════════
 # Testes: CIC-IDS2017
-# ════════════════════════════════════════════════════════════════
 
 
 class TestCICPreprocessing:
@@ -128,9 +124,7 @@ class TestCICPreprocessing:
             assert (result[fwd_col] >= 0).all(), "Valores negativos não foram clipados"
 
 
-# ════════════════════════════════════════════════════════════════
 # Testes: UNSW-NB15
-# ════════════════════════════════════════════════════════════════
 
 
 class TestUNSWPreprocessing:
@@ -163,9 +157,7 @@ class TestUNSWPreprocessing:
         assert not result[num_cols].isna().any().any()
 
 
-# ════════════════════════════════════════════════════════════════
 # Testes: Utilidades
-# ════════════════════════════════════════════════════════════════
 
 
 class TestNormalization:

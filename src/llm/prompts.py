@@ -9,9 +9,7 @@ Estratégia v2 (chain-of-thought + few-shot):
 - Define explicitamente quando classificar como Benign (resolve TN=0)
 """
 
-# ════════════════════════════════════════════════════════════════
 # SYSTEM PROMPT — Stage 2 (categoria detalhada)
-# ════════════════════════════════════════════════════════════════
 
 SYSTEM_PROMPT = """You are a senior network security analyst doing real-time triage of network flows.
 
@@ -138,9 +136,7 @@ they typically indicate Exploits, Fuzzers, Shellcode, Backdoor — NOT DDoS.
    - Has malformed-looking traffic → Fuzzers"""
 
 
-# ════════════════════════════════════════════════════════════════
 # USER PROMPT TEMPLATE
-# ════════════════════════════════════════════════════════════════
 
 USER_PROMPT_TEMPLATE = """# NETWORK FLOW TO TRIAGE:
 
@@ -154,9 +150,7 @@ Apply the REASONING PROTOCOL from your system prompt and return the JSON triage 
 Remember: trust the categorical labels and ⚠ signatures — they encode pre-analyzed evidence."""
 
 
-# ════════════════════════════════════════════════════════════════
 # Stage 1 prompt — binary triage (Benign vs Threat)
-# ════════════════════════════════════════════════════════════════
 
 STAGE1_SYSTEM_PROMPT = """You are a CONSERVATIVE network triage filter. Your job: decide BENIGN or THREAT.
 
@@ -194,9 +188,7 @@ STAGE1_USER_PROMPT_TEMPLATE = """{record_description}
 Decision (BENIGN or THREAT):"""
 
 
-# ════════════════════════════════════════════════════════════════
 # Builders
-# ════════════════════════════════════════════════════════════════
 
 def build_user_prompt(record_description: str, rag_context: str) -> str:
     """Monta o prompt do Stage 2 (categoria detalhada)."""
@@ -213,9 +205,7 @@ def build_stage1_prompt(record_description: str) -> str:
     )
 
 
-# ════════════════════════════════════════════════════════════════
 # Validação da saída do LLM
-# ════════════════════════════════════════════════════════════════
 
 VALID_ATTACK_TYPES = {
     "Benign", "DoS", "DDoS", "Brute Force", "Botnet", "Reconnaissance",

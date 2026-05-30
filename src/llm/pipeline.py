@@ -22,7 +22,6 @@ Uso:
 """
 
 import argparse
-import json
 import time
 from pathlib import Path
 
@@ -112,31 +111,6 @@ def select_records(
     return df.sample(n=min(n, len(df)), random_state=seed).reset_index(drop=True)
 
 
-def save_results(results: list[TriageResult], output_path: Path):
-    """Salva resultados em arquivo JSON."""
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    has_gt = all(r.ground_truth is not None for r in results)
-    correct = sum(1 for r in results if _matches_label(r.attack_type, r.ground_truth)) if has_gt else None
-    tp = sum(1 for r in results if _is_threat(r.attack_type) and _is_threat(r.ground_truth)) if has_gt else None
-    tn = sum(1 for r in results if not _is_threat(r.attack_type) and not _is_threat(r.ground_truth)) if has_gt else None
-    fp = sum(1 for r in results if _is_threat(r.attack_type) and not _is_threat(r.ground_truth)) if has_gt else None
-    fn = sum(1 for r in results if not _is_threat(r.attack_type) and _is_threat(r.ground_truth)) if has_gt else None
-    payload = {
-        "n_records": len(results),
-        "n_valid": sum(1 for r in results if r.is_valid),
-        "avg_elapsed_seconds": sum(r.elapsed_seconds for r in results) / len(results) if results else 0,
-        "accuracy_exact": round(correct / len(results), 4) if correct is not None else None,
-        "accuracy_binary": round((tp + tn) / len(results), 4) if tp is not None else None,
-        "precision": round(tp / (tp + fp), 4) if tp is not None and (tp + fp) > 0 else None,
-        "recall": round(tp / (tp + fn), 4) if tp is not None and (tp + fn) > 0 else None,
-        "confusion": {"tp": tp, "tn": tn, "fp": fp, "fn": fn} if has_gt else None,
-        "results": [r.to_dict() for r in results],
-    }
-    with open(output_path, "w", encoding="utf-8") as f:
-        json.dump(payload, f, indent=2, ensure_ascii=False)
-    logger.info(f"Resultados salvos em {output_path}")
-
-
 _BENIGN_LABELS = {"benign", "normal", "background"}
 
 def _is_threat(label: str) -> bool:
@@ -224,9 +198,7 @@ def _matches_label(predicted: str, actual: str) -> bool:
     return False
 
 
-# ════════════════════════════════════════════════════════════════
 # CLI
-# ════════════════════════════════════════════════════════════════
 
 def main():
     parser = argparse.ArgumentParser(
@@ -286,7 +258,19 @@ def main():
     parser.add_argument(
         "--use-rf",
         action="store_true",
-        help="Ativar pre-classificador Random Forest (filtra Benign de alta confiança)",
+        help="Ativar pre-classificador clássico (filtra Benign de alta confiança)",
+    )
+    parser.add_argument(
+        "--clf-kind",
+        choices=["rf", "best", "ensemble"],
+        default="rf",
+        help="Variante do pré-classificador: rf | best | ensemble (default: rf)",
+    )
+    parser.add_argument(
+        "--run-dir",
+        type=str,
+        default=None,
+        help="Pasta base para salvar as runs (default: outputs/triage_runs)",
     )
     parser.add_argument(
         "--no-rerank",
@@ -327,13 +311,13 @@ def main():
 
     logger.info(f"{len(sample)} registros selecionados para triagem")
 
-    # Pre-classificador RF (opcional)
+    # Pré-classificador clássico (opcional) — variante escolhida por --clf-kind
     rf_classifier = None
     if args.use_rf:
         from src.ml.preclassifier import PreClassifier
-        rf_classifier = PreClassifier()
+        rf_classifier = PreClassifier(model_kind=args.clf_kind)
         if not rf_classifier.is_ready():
-            logger.warning("RF não disponível — siga: python -m src.ml.preclassifier")
+            logger.warning(f"Pré-classificador '{args.clf_kind}' indisponível — treine com: python -m src.ml.benchmark")
             rf_classifier = None
 
     # Retriever com cross-encoder re-rank (opcional)
@@ -356,27 +340,42 @@ def main():
     # Rodar triagem em lote
     results = engine.triage_batch(sample)
 
-    # Salvar resultados — cada run vai para uma subpasta própria
-    output_path = args.output
-    if output_path is None:
-        timestamp = time.strftime("%Y%m%d_%H%M%S")
-        tags = []
-        tags.append("norag" if args.no_rag else "rag")
-        if not args.no_rag and not args.no_rerank:
-            tags.append("rerank")
-        if args.two_stage:
-            tags.append("2stage")
-        if rf_classifier is not None:
-            tags.append("rf")
-        tags.append("stratified" if args.stratified else "random")
-        suffix = "_".join(tags)
-        run_dir = config.TRIAGE_RUNS_DIR / f"run_{timestamp}_{suffix}_n{len(sample)}"
-        run_dir.mkdir(parents=True, exist_ok=True)
-        output_path = run_dir / "results.json"
-    else:
-        output_path = Path(output_path)
+    # Salvar resultados no formato padronizado (schema v3 + manifesto agregável)
+    from datetime import datetime
+    from src.evaluation.runlog import config_slug, make_run_dir, save_run
 
-    save_results(results, output_path)
+    flags = {
+        "use_rag": not args.no_rag,
+        "use_rerank": (not args.no_rag) and (not args.no_rerank),
+        "use_rf": rf_classifier is not None,
+        "clf_kind": args.clf_kind if rf_classifier is not None else None,
+        "two_stage": args.two_stage,
+        "stratified": args.stratified,
+        "rag_threshold": args.rag_threshold,
+        "rf_threshold": args.rf_threshold,
+        "top_k": args.top_k,
+    }
+    slug = config_slug(flags)
+    timestamp = time.strftime("%Y%m%d_%H%M%S")
+
+    if args.output:
+        run_dir = Path(args.output)
+        run_dir.mkdir(parents=True, exist_ok=True)
+    else:
+        base = Path(args.run_dir) if args.run_dir else config.TRIAGE_RUNS_DIR
+        run_dir = make_run_dir(base, args.dataset, slug, len(sample), seed, timestamp)
+
+    run_meta = {
+        "id": run_dir.name,
+        "timestamp": datetime.now().isoformat(timespec="seconds"),
+        "config": slug,
+        "dataset": args.dataset,
+        "n_records": len(sample),
+        "seed": seed,
+        "model": results[0].model_name if results else "",
+        "flags": flags,
+    }
+    save_run([r.to_dict() for r in results], run_meta, run_dir)
 
     # Resumo no console
     print_summary(results)

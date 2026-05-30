@@ -92,7 +92,7 @@ class TestRecordToText:
 
 class TestFormatters:
     def test_fmt_bytes_zero(self):
-        assert _fmt_bytes(0) == "0 bytes"
+        assert _fmt_bytes(0) == "0 B"
 
     def test_fmt_bytes_kb(self):
         assert "KB" in _fmt_bytes(2048)
@@ -101,7 +101,7 @@ class TestFormatters:
         assert "MB" in _fmt_bytes(2 * 1024 * 1024)
 
     def test_fmt_time_instant(self):
-        assert _fmt_time(0) == "instantânea"
+        assert _fmt_time(0) == "0s"
 
     def test_fmt_time_ms(self):
         assert "ms" in _fmt_time(0.5)

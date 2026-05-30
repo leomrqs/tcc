@@ -24,9 +24,7 @@ from src.utils.logger import get_logger
 logger = get_logger(__name__)
 
 
-# ════════════════════════════════════════════════════════════════
 # Mapeamentos auxiliares
-# ════════════════════════════════════════════════════════════════
 
 PROTOCOL_NAMES = {
     1: "ICMP",
@@ -58,9 +56,7 @@ COMMON_PORTS = {
 }
 
 
-# ════════════════════════════════════════════════════════════════
 # Categorias discriminativas
-# ════════════════════════════════════════════════════════════════
 
 def _classify_packet_rate(rate: float, total_pkts: int = None, duration: float = None) -> str:
     """
@@ -257,9 +253,7 @@ def _heuristic_attack_signatures(rec: pd.Series, source: str,
     return sigs
 
 
-# ════════════════════════════════════════════════════════════════
 # Função pública principal
-# ════════════════════════════════════════════════════════════════
 
 def record_to_text(record: pd.Series) -> str:
     """
@@ -287,9 +281,7 @@ def records_to_text_batch(df: pd.DataFrame) -> list[str]:
     return [record_to_text(row) for _, row in df.iterrows()]
 
 
-# ════════════════════════════════════════════════════════════════
 # Conversão CIC-IDS2017
-# ════════════════════════════════════════════════════════════════
 
 def _cic_record_to_text(rec: pd.Series) -> str:
     parts = []
@@ -399,9 +391,7 @@ def _format_tcp_flags_cic_raw(rec: pd.Series) -> str:
     return ", ".join(observed) if observed else "(nenhuma)"
 
 
-# ════════════════════════════════════════════════════════════════
 # Conversão UNSW-NB15
-# ════════════════════════════════════════════════════════════════
 
 UNSW_SERVICE_HINTS = {
     0: "service desconhecido",
@@ -554,9 +544,7 @@ def _unsw_record_to_text(rec: pd.Series) -> str:
     return "\n".join(parts)
 
 
-# ════════════════════════════════════════════════════════════════
 # Fallback genérico
-# ════════════════════════════════════════════════════════════════
 
 def _generic_record_to_text(rec: pd.Series) -> str:
     parts = ["Registro de tráfego de rede com características"]
@@ -573,9 +561,7 @@ def _generic_record_to_text(rec: pd.Series) -> str:
     return ": ".join(parts) + "."
 
 
-# ════════════════════════════════════════════════════════════════
 # Helpers de formatação
-# ════════════════════════════════════════════════════════════════
 
 def _proto_name(proto_val) -> str:
     if proto_val is None or pd.isna(proto_val):

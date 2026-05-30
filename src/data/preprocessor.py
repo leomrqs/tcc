@@ -22,9 +22,7 @@ from src import config
 logger = get_logger(__name__)
 
 
-# ════════════════════════════════════════════════════════════════
 # Pré-processamento do CIC-IDS2017
-# ════════════════════════════════════════════════════════════════
 
 def preprocess_cic(df: pd.DataFrame) -> pd.DataFrame:
     """
@@ -112,9 +110,7 @@ def preprocess_cic(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-# ════════════════════════════════════════════════════════════════
 # Pré-processamento do UNSW-NB15
-# ════════════════════════════════════════════════════════════════
 
 def preprocess_unsw(df: pd.DataFrame) -> pd.DataFrame:
     """
@@ -235,9 +231,7 @@ def preprocess_unsw(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-# ════════════════════════════════════════════════════════════════
 # Normalização (aplicada após unificação)
-# ════════════════════════════════════════════════════════════════
 
 def normalize_features(df: pd.DataFrame) -> tuple[pd.DataFrame, dict]:
     """
@@ -279,9 +273,7 @@ def normalize_features(df: pd.DataFrame) -> tuple[pd.DataFrame, dict]:
     return df, norm_params
 
 
-# ════════════════════════════════════════════════════════════════
 # Funções auxiliares
-# ════════════════════════════════════════════════════════════════
 
 def remove_high_correlation(df: pd.DataFrame, threshold: float = 0.95) -> pd.DataFrame:
     """

@@ -4,13 +4,18 @@
 # salva resultados em outputs/triage_runs/, gera summary.json
 # e tabela comparativa final.
 #
-# Configuracoes testadas:
-#   1. baseline                  -> no-rag
-#   2. rag_only                  -> rag denso, sem rerank
-#   3. rag_rerank                -> rag + cross-encoder re-rank
-#   4. rag_rerank_2stage         -> +two-stage
-#   5. rag_rerank_rf             -> +Random Forest pre-filter
-#   6. full_stack                -> RF + 2-stage + RAG rerank
+# Configuracoes testadas (ablation study):
+#   1. baseline_norag         -> LLM puro
+#   2. norag_rf               -> LLM + Random Forest, sem RAG
+#   3. rag_only               -> RAG denso, sem rerank
+#   4. rag_rerank             -> RAG + cross-encoder re-rank
+#   5. rag_rerank_rf          -> + Random Forest pre-filter
+#   6. rag_rerank_best        -> + melhor modelo do benchmark (XGBoost) como pre-filtro (recomendada)
+#   7. rag_rerank_rf_2stage   -> + Stage 1 LLM binario (experimental)
+#
+# Cada run grava no schema v3 (results.json estruturado) e adiciona uma linha ao
+# manifesto outputs/triage_runs/runs_index.jsonl (facil de agregar com pandas).
+# Progresso, % e ETA aparecem no terminal a cada run.
 #
 # Tamanhos: N=3 (agil), N=5 (medio), N=8 (grande)
 #
@@ -67,11 +72,12 @@ $Configs = @(
     @{ Name = "3_rag_only";              ExtraArgs = @("--no-rerank") },
     @{ Name = "4_rag_rerank";            ExtraArgs = @() },
     @{ Name = "5_rag_rerank_rf";         ExtraArgs = @("--use-rf") },
-    @{ Name = "6_rag_rerank_rf_2stage";  ExtraArgs = @("--use-rf", "--two-stage") }
+    @{ Name = "6_rag_rerank_best";       ExtraArgs = @("--use-rf", "--clf-kind", "best") },
+    @{ Name = "7_rag_rerank_rf_2stage";  ExtraArgs = @("--use-rf", "--two-stage") }
 )
 
 if ($SkipBaseline) {
-    $Configs = $Configs | Where-Object { $_.Name -ne "1_baseline" }
+    $Configs = $Configs | Where-Object { $_.Name -ne "1_baseline_norag" }
 }
 
 $TotalRuns = $Configs.Count * $Sizes.Count * $SeedsPerConfig
@@ -114,7 +120,9 @@ foreach ($size in $Sizes) {
             Write-Log $header "Green"
 
             $tStart = Get-Date
-            $allArgs = @("--n", "$size", "--dataset", "unified", "--stratified", "--seed", "$seed") + $cfgArgs
+            $RunRoot = Join-Path $BenchmarkRoot "runs"
+            $allArgs = @("--n", "$size", "--dataset", "unified", "--stratified",
+                         "--seed", "$seed", "--run-dir", "$RunRoot") + $cfgArgs
 
             try {
                 & $Python -m src.llm.pipeline @allArgs 2>&1 | Out-File -Append -FilePath $LogFile
@@ -132,29 +140,32 @@ foreach ($size in $Sizes) {
             $tElapsed = [int]((Get-Date) - $tStart).TotalSeconds
             Write-Log "  concluido em ${tElapsed}s" "Gray"
 
-            # Localizar a ultima run criada
-            $lastRun = Get-ChildItem -Path "outputs\triage_runs" -Directory |
+            # Localizar a ultima run criada (na pasta desta bateria)
+            $lastRun = Get-ChildItem -Path $RunRoot -Directory -ErrorAction SilentlyContinue |
                        Sort-Object LastWriteTime -Descending |
                        Select-Object -First 1
             if ($lastRun) {
                 $resultsJson = Join-Path $lastRun.FullName "results.json"
                 if (Test-Path $resultsJson) {
                     $r = Get-Content $resultsJson -Raw | ConvertFrom-Json
+                    $sm = $r.summary
                     $entry = [PSCustomObject]@{
                         config = $cfgName
                         n = $size
                         seed = $seed
                         run_dir = $lastRun.Name
-                        accuracy_exact = $r.accuracy_exact
-                        accuracy_binary = $r.accuracy_binary
-                        precision = $r.precision
-                        recall = $r.recall
-                        n_valid = $r.n_valid
-                        avg_elapsed = $r.avg_elapsed_seconds
-                        confusion = $r.confusion
+                        accuracy_exact = $sm.accuracy_exact
+                        accuracy_binary = $sm.accuracy_binary
+                        precision = $sm.precision
+                        recall = $sm.recall
+                        f1 = $sm.f1
+                        macro_f1 = $sm.macro_f1
+                        explanation_composite = $sm.explanation_composite
+                        avg_elapsed = $sm.avg_elapsed_seconds
+                        confusion = $r.metrics.binary.confusion
                     }
                     $ResultsIndex += $entry
-                    $metricsLine = "  exata=$($r.accuracy_exact) binaria=$($r.accuracy_binary) prec=$($r.precision) recall=$($r.recall)"
+                    $metricsLine = "  exata=$($sm.accuracy_exact) binaria=$($sm.accuracy_binary) prec=$($sm.precision) recall=$($sm.recall) expl=$($sm.explanation_composite)"
                     Write-Log $metricsLine "Cyan"
 
                     # Salva summary incremental
@@ -186,9 +197,11 @@ $grouped = $ResultsIndex | Group-Object config | ForEach-Object {
         avg_binary = [math]::Round(($g | Measure-Object accuracy_binary -Average).Average, 4)
         avg_precision = [math]::Round(($g | Measure-Object precision -Average).Average, 4)
         avg_recall = [math]::Round(($g | Measure-Object recall -Average).Average, 4)
+        avg_f1 = [math]::Round(($g | Measure-Object f1 -Average).Average, 4)
+        avg_expl = [math]::Round(($g | Measure-Object explanation_composite -Average).Average, 4)
         avg_time = [math]::Round(($g | Measure-Object avg_elapsed -Average).Average, 1)
     }
-} | Sort-Object avg_exact -Descending
+} | Sort-Object avg_binary, avg_exact -Descending
 
 $tableStr = $grouped | Format-Table -AutoSize | Out-String
 Write-Log $tableStr
