@@ -60,6 +60,7 @@ def _flat_summary(run_meta: dict, metrics: dict, expl: dict | None) -> dict:
         "timestamp": run_meta["timestamp"],
         "config": run_meta["config"],
         "dataset": run_meta["dataset"],
+        "stratified": run_meta.get("flags", {}).get("stratified"),
         "n_records": run_meta["n_records"],
         "n_scored": metrics.get("n_scored"),
         "seed": run_meta["seed"],

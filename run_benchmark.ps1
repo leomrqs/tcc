@@ -22,12 +22,18 @@
 # Uso:
 #   .\run_benchmark.ps1
 #   .\run_benchmark.ps1 -SeedsPerConfig 3
-#   .\run_benchmark.ps1 -Quick          # versao rapida para testar
+#   .\run_benchmark.ps1 -Quick                      # versao rapida para testar
+#   .\run_benchmark.ps1 -Dataset cic -Sizes 40      # so CIC-IDS2017
+#   .\run_benchmark.ps1 -Dataset unsw -Sizes 40     # so UNSW-NB15
+#   .\run_benchmark.ps1 -Stratified:$false -Sizes 60  # amostragem natural (high-benign)
 # ============================================================
 
 param(
     [int]$SeedsPerConfig = 2,
     [int[]]$Sizes = @(3, 5, 8),
+    [ValidateSet("unified", "cic", "unsw")]
+    [string]$Dataset = "unified",
+    [bool]$Stratified = $true,
     [switch]$Quick,
     [switch]$SkipBaseline
 )
@@ -89,6 +95,8 @@ Write-Log "BATERIA DE BENCHMARK - $TotalRuns runs no total" "Cyan"
 $cfgCount = $Configs.Count
 $sizesStr = ($Sizes -join ',')
 Write-Log "Configs: $cfgCount | Tamanhos: $sizesStr | Seeds/cfg: $SeedsPerConfig" "Cyan"
+$samplingMode = if ($Stratified) { "estratificada" } else { "natural (high-benign)" }
+Write-Log "Dataset: $Dataset | Amostragem: $samplingMode" "Cyan"
 Write-Log "Output: $BenchmarkRoot" "Cyan"
 Write-Log $Sep "Cyan"
 
@@ -121,8 +129,10 @@ foreach ($size in $Sizes) {
 
             $tStart = Get-Date
             $RunRoot = Join-Path $BenchmarkRoot "runs"
-            $allArgs = @("--n", "$size", "--dataset", "unified", "--stratified",
-                         "--seed", "$seed", "--run-dir", "$RunRoot") + $cfgArgs
+            $allArgs = @("--n", "$size", "--dataset", "$Dataset",
+                         "--seed", "$seed", "--run-dir", "$RunRoot")
+            if ($Stratified) { $allArgs += "--stratified" }
+            $allArgs += $cfgArgs
 
             try {
                 & $Python -m src.llm.pipeline @allArgs 2>&1 | Out-File -Append -FilePath $LogFile

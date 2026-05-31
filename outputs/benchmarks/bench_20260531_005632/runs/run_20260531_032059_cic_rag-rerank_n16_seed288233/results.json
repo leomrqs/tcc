@@ -1,0 +1,806 @@
+{
+  "schema_version": 3,
+  "run": {
+    "id": "run_20260531_032059_cic_rag-rerank_n16_seed288233",
+    "timestamp": "2026-05-31T03:20:59",
+    "config": "rag-rerank",
+    "dataset": "cic",
+    "n_records": 16,
+    "seed": 288233,
+    "model": "foundation-sec-8b-instruct",
+    "flags": {
+      "use_rag": true,
+      "use_rerank": true,
+      "use_rf": false,
+      "clf_kind": null,
+      "two_stage": false,
+      "stratified": true,
+      "rag_threshold": 0.55,
+      "rf_threshold": 0.95,
+      "top_k": 5
+    }
+  },
+  "summary": {
+    "run_id": "run_20260531_032059_cic_rag-rerank_n16_seed288233",
+    "timestamp": "2026-05-31T03:20:59",
+    "config": "rag-rerank",
+    "dataset": "cic",
+    "stratified": true,
+    "n_records": 16,
+    "n_scored": 16,
+    "seed": 288233,
+    "model": "foundation-sec-8b-instruct",
+    "accuracy_exact": 0.25,
+    "accuracy_binary": 0.8125,
+    "precision": 0.8125,
+    "recall": 1.0,
+    "f1": 0.8966,
+    "specificity": 0.0,
+    "macro_f1": 0.1333,
+    "weighted_f1": 0.15,
+    "tp": 13,
+    "tn": 0,
+    "fp": 3,
+    "fn": 0,
+    "avg_confidence": 0.825,
+    "avg_elapsed_seconds": 28.64,
+    "explanation_composite": 0.9179,
+    "explanation_mitre_validity": 1.0,
+    "n_explained": 16
+  },
+  "metrics": {
+    "n_scored": 16,
+    "accuracy_exact": 0.25,
+    "binary": {
+      "accuracy": 0.8125,
+      "precision": 0.8125,
+      "recall": 1.0,
+      "f1": 0.8966,
+      "specificity": 0.0,
+      "confusion": {
+        "tp": 13,
+        "tn": 0,
+        "fp": 3,
+        "fn": 0
+      }
+    },
+    "macro_f1": 0.1333,
+    "weighted_f1": 0.15,
+    "per_class": {
+      "Benign": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "support": 3
+      },
+      "Brute Force": {
+        "precision": 0.5,
+        "recall": 0.3333,
+        "f1": 0.4,
+        "support": 3
+      },
+      "DDoS": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "support": 3
+      },
+      "DoS": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "support": 3
+      },
+      "Reconnaissance": {
+        "precision": 0.25,
+        "recall": 1.0,
+        "f1": 0.4,
+        "support": 3
+      },
+      "Unknown": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "support": 1
+      }
+    },
+    "confusion_matrix": {
+      "labels": [
+        "Benign",
+        "Brute Force",
+        "DDoS",
+        "DoS",
+        "Reconnaissance",
+        "Unknown"
+      ],
+      "matrix": [
+        [
+          0,
+          0,
+          0,
+          0,
+          3,
+          0
+        ],
+        [
+          0,
+          1,
+          0,
+          1,
+          1,
+          0
+        ],
+        [
+          0,
+          1,
+          0,
+          1,
+          1,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          3,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          3,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          1,
+          0
+        ]
+      ]
+    },
+    "predicted_distribution": {
+      "Reconnaissance": 12,
+      "Brute Force": 2,
+      "DoS": 2
+    },
+    "truth_distribution": {
+      "Benign": 3,
+      "Brute Force": 3,
+      "DDoS": 3,
+      "DoS": 3,
+      "Reconnaissance": 3,
+      "Unknown": 1
+    },
+    "avg_confidence": 0.825,
+    "avg_elapsed_seconds": 28.64
+  },
+  "explanation_quality": {
+    "n_explained": 16,
+    "composite_mean": 0.9179,
+    "composite_std": 0.036,
+    "structure_mean": 1.0,
+    "mitre_validity_mean": 1.0,
+    "relevance_mean": 0.7537,
+    "consistency_mean": 0.8625,
+    "grounding_mean": 1.0,
+    "n_mitre_invalid": 0,
+    "mitre_invalid_examples": []
+  },
+  "records": [
+    {
+      "attack_type": "Reconnaissance",
+      "severity": "medium",
+      "confidence": 0.85,
+      "mitre_techniques": [
+        "T1046",
+        "T1595",
+        "T1595.001"
+      ],
+      "explanation": "The network flow is characterized by a unidirectional pattern with no response from the destination, indicative of reconnaissance activity. The TCP flags ACK=1 and URG=1 suggest an attempt to establish a connection without expecting a reply (likely a stealth scan or one-way attack). The low packet rate and small window size further support this classification as a reconnaissance effort rather than a volumetric DoS.",
+      "recommendations": [
+        "Investigate the source IP for potential scanning behavior.",
+        "Monitor for similar patterns to other hosts within the network.",
+        "Review firewall logs for any blockages or alerts related to this flow."
+      ],
+      "record_description": "=== FLUXO TCP (CIC-IDS2017) ===\nDURAÇÃO: MEDIUM (22.00s — sessão típica de aplicação)\nTAXA DE PACOTES: QUASE ZERO (0.0 pkt/s — scan stealth, conexão presa ou fluxo abandonado)\nTAXA DE BYTES: ZERO\nFORMA DO FLUXO: UNIDIRECIONAL (sem resposta do destino — porta fechada, drop por firewall, scan stealth ou one-way attack/exfiltration)\nVOLUME: 1 pkts fwd (0 B) | 0 pkts bwd (0 B)\nFLAGS TCP: ACK=1, URG=1\nJANELA TCP: fwd=946, bwd=1024 — janela pequena (raw scan, tcpdump)",
+      "retrieved_context_titles": [
+        "Network Flow Pattern Taxonomy — Quick Decision Reference",
+        "Benign — Tráfego de Rede Legítimo",
+        "Reconnaissance — Network Scanning and Probing",
+        "Communication To Uncommon Destination Ports",
+        "Potentially Suspicious Malware Callback Communication - Linux"
+      ],
+      "rag_distances": [
+        0.880314398752808,
+        0.9562877659773183,
+        0.9587695768354216,
+        0.988443250571974,
+        0.9937023799020928
+      ],
+      "elapsed_seconds": 33.03,
+      "model_name": "foundation-sec-8b-instruct",
+      "ground_truth": "Benign",
+      "raw_llm_response": "{\n\n\"attack_type\": \"Reconnaissance\",\n\"severity\": \"medium\",\n\"confidence\": 0.85,\n\"mitre_techniques\": [\"T1046\", \"T1595\", \"T1595.001\"],\n\"explanation\": \"The network flow is characterized by a unidirectional pattern with no response from the destination, indicative of reconnaissance activity. The TCP flags ACK=1 and URG=1 suggest an attempt to establish a connection without expecting a reply (likely a stealth scan or one-way attack). The low packet rate and small window size further support this classification as a reconnaissance effort rather than a volumetric DoS.\",\n\"recommendations\": [\n  \"Investigate the source IP for potential scanning behavior.\",\n  \"Monitor for similar patterns to other hosts within the network.\",\n  \"Review firewall logs for any blockages or alerts related to this flow.\"\n]\n}",
+      "validation_errors": [],
+      "stage1_decision": null,
+      "stage_skipped": null
+    },
+    {
+      "attack_type": "Reconnaissance",
+      "severity": "low",
+      "confidence": 0.85,
+      "mitre_techniques": [
+        "T1046",
+        "T1595",
+        "T1595.001"
+      ],
+      "explanation": "The network flow is characterized by a UNIDIRECIONAL pattern with a LOW packet rate, indicative of reconnaissance activity. The TCP flags indicate an ACK and URG flag set which could suggest a SYN-ACK response from the target (closed port) or a follow-up probe after initial discovery. Given the INSTANT duration and the lack of payload beyond basic handshake packets, this flow is consistent with reconnaissance tactics such as port scanning or service enumeration. The absence of a significant byte transfer and the unidirectional nature without a return response further support this classification.",
+      "recommendations": [
+        "Enhance monitoring for SYN scans and other stealthy reconnaissance techniques.",
+        "Implement rate limiting on suspicious ports to mitigate reconnaissance activity."
+      ],
+      "record_description": "=== FLUXO TCP (CIC-IDS2017) ===\nDURAÇÃO: MEDIUM (2.00s — sessão típica de aplicação)\nTAXA DE PACOTES: BAIXA (0.5 pkt/s — tráfego idle ou reconnaissance lento)\nTAXA DE BYTES: ZERO\nFORMA DO FLUXO: UNIDIRECIONAL (sem resposta do destino — porta fechada, drop por firewall, scan stealth ou one-way attack/exfiltration)\nVOLUME: 1 pkts fwd (0 B) | 0 pkts bwd (0 B)\nFLAGS TCP: ACK=1, URG=1\nJANELA TCP: fwd=32832, bwd=349",
+      "retrieved_context_titles": [
+        "Network Flow Pattern Taxonomy — Quick Decision Reference",
+        "Reconnaissance — Network Scanning and Probing",
+        "DoS — Denial of Service Attack",
+        "Benign — Tráfego de Rede Legítimo",
+        "Suspicious Use of /dev/tcp"
+      ],
+      "rag_distances": [
+        0.5700082444891574,
+        0.7595183374717451,
+        0.7663533507047293,
+        0.9223446462428143,
+        0.9958789915267793
+      ],
+      "elapsed_seconds": 31.19,
+      "model_name": "foundation-sec-8b-instruct",
+      "ground_truth": "Benign",
+      "raw_llm_response": "{\n\n\"attack_type\": \"Reconnaissance\",\n\"severity\": \"low\",\n\"confidence\": 0.85,\n\"mitre_techniques\": [\"T1046\", \"T1595\", \"T1595.001\"],\n\"explanation\": \"The network flow is characterized by a UNIDIRECIONAL pattern with a LOW packet rate, indicative of reconnaissance activity. The TCP flags indicate an ACK and URG flag set which could suggest a SYN-ACK response from the target (closed port) or a follow-up probe after initial discovery. Given the INSTANT duration and the lack of payload beyond basic handshake packets, this flow is consistent with reconnaissance tactics such as port scanning or service enumeration. The absence of a significant byte transfer and the unidirectional nature without a return response further support this classification.\"\n \t\t,\"recommendations\": [\"Enhance monitoring for SYN scans and other stealthy reconnaissance techniques.\", \"Implement rate limiting on suspicious ports to mitigate reconnaissance activity.\"]}",
+      "validation_errors": [],
+      "stage1_decision": null,
+      "stage_skipped": null
+    },
+    {
+      "attack_type": "Reconnaissance",
+      "severity": "low",
+      "confidence": 0.85,
+      "mitre_techniques": [
+        "T1046",
+        "T1087"
+      ],
+      "explanation": "The network flow is characterized by a UNIDIRECIONAL pattern with an INSTANT duration, indicating a single probe without response from the destination. This behavior aligns with reconnaissance tactics where attackers scan for open ports or vulnerable services. The low rate of packets and absence of payload further support this classification.",
+      "recommendations": [
+        "Monitor for similar UNIDIRECIONAL flows to multiple destinations.",
+        "Implement port scanning detection mechanisms.",
+        "Consider deploying honeypots to attract and analyze reconnaissance attempts."
+      ],
+      "record_description": "=== FLUXO UDP (CIC-IDS2017) ===\nDURAÇÃO: SHORT (24.2ms — handshake rápido ou requisição curta)\nTAXA DE PACOTES: MODERADA (41.3 pkt/s — tráfego normal de aplicação)\nTAXA DE BYTES: BAIXA (2.2K B/s — controle ou keep-alive)\nFORMA DO FLUXO: UNIDIRECIONAL (sem resposta do destino — porta fechada, drop por firewall, scan stealth ou one-way attack/exfiltration)\nVOLUME: 1 pkts fwd (52B) | 0 pkts bwd (0 B)\nTAMANHO PKT: min=52, max=106, média=70 bytes\nFLAGS TCP: (nenhuma)",
+      "retrieved_context_titles": [
+        "Network Flow Pattern Taxonomy — Quick Decision Reference",
+        "DoS — Denial of Service Attack",
+        "Brute Force — Credential Attack (SSH/FTP/Web)",
+        "Reconnaissance — Network Scanning and Probing",
+        "Benign — Tráfego de Rede Legítimo"
+      ],
+      "rag_distances": [
+        0.8458224004754837,
+        0.930602683312268,
+        0.9688535147636177,
+        0.9859787704820545,
+        0.9913509989725384
+      ],
+      "elapsed_seconds": 25.06,
+      "model_name": "foundation-sec-8b-instruct",
+      "ground_truth": "Benign",
+      "raw_llm_response": "{\n\n\"attack_type\": \"Reconnaissance\",\n\"severity\": \"low\",\n\"confidence\": 0.85,\n\"mitre_techniques\": [\"T1046\", \"T1087\"],\n\"explanation\": \"The network flow is characterized by a UNIDIRECIONAL pattern with an INSTANT duration, indicating a single probe without response from the destination. This behavior aligns with reconnaissance tactics where attackers scan for open ports or vulnerable services. The low rate of packets and absence of payload further support this classification.\"\n \t,\n\"recommendations\": [\n    \"Monitor for similar UNIDIRECIONAL flows to multiple destinations.\",\n    \"Implement port scanning detection mechanisms.\",\n    \"Consider deploying honeypots to attract and analyze reconnaissance attempts.\"\n  ]\n}",
+      "validation_errors": [],
+      "stage1_decision": null,
+      "stage_skipped": null
+    },
+    {
+      "attack_type": "Brute Force",
+      "severity": "high",
+      "confidence": 0.95,
+      "mitre_techniques": [
+        "T1110",
+        "T1110.001",
+        "T1110.003",
+        "T1110.004"
+      ],
+      "explanation": "The network flow exhibits characteristics consistent with a brute force attack, such as repeated attempts to authenticate on known service ports (likely FTP or SSH) without receiving successful responses, indicating failed login attempts. The low packet rate and unidirectional nature of the traffic suggest stealthy behavior typical for automated password guessing attacks.",
+      "recommendations": [
+        "Block or limit access from suspicious IP addresses.",
+        "Implement multi-factor authentication to mitigate brute force risks.",
+        "Monitor for patterns of repeated failed logins on critical services.",
+        "Consider rate limiting and CAPTCHA challenges for login attempts."
+      ],
+      "record_description": "=== FLUXO TCP (CIC-IDS2017) ===\nDURAÇÃO: LONG (1.0min — conexão persistente ou C2 beaconing)\nTAXA DE PACOTES: QUASE ZERO (0.0 pkt/s — scan stealth, conexão presa ou fluxo abandonado)\nTAXA DE BYTES: ZERO\nFORMA DO FLUXO: UNIDIRECIONAL (sem resposta do destino — porta fechada, drop por firewall, scan stealth ou one-way attack/exfiltration)\nVOLUME: 1 pkts fwd (0 B) | 0 pkts bwd (0 B)\nFLAGS TCP: ACK=1, URG=1\nJANELA TCP: fwd=259, bwd=247 — janela pequena (raw scan, tcpdump)\nASSINATURAS DETECTADAS:\n  ⚠ ASSINATURA Reconnaissance lento (poucos pacotes, longa duração, sem resposta)",
+      "retrieved_context_titles": [
+        "Brute Force — Credential Attack (SSH/FTP/Web)",
+        "Benign — Tráfego de Rede Legítimo",
+        "Reconnaissance — Network Scanning and Probing",
+        "Network Flow Pattern Taxonomy — Quick Decision Reference",
+        "Infiltration — Insider Compromise & Lateral Movement"
+      ],
+      "rag_distances": [
+        0.8490077165065193,
+        0.9117353865921304,
+        0.9170963508524587,
+        0.9833215850929939,
+        0.9876550540150444
+      ],
+      "elapsed_seconds": 29.39,
+      "model_name": "foundation-sec-8b-instruct",
+      "ground_truth": "Brute Force",
+      "raw_llm_response": "{\n\n  \"attack_type\": \"Brute Force\",\n  \"severity\": \"high\",\n  \"confidence\": 0.95,\n  \"mitre_techniques\": [\"T1110\", \"T1110.001\", \"T1110.003\", \"T1110.004\"],\n  \"explanation\": \"The network flow exhibits characteristics consistent with a brute force attack, such as repeated attempts to authenticate on known service ports (likely FTP or SSH) without receiving successful responses, indicating failed login attempts. The low packet rate and unidirectional nature of the traffic suggest stealthy behavior typical for automated password guessing attacks.\",\n  \"recommendations\": [\n    \"Block or limit access from suspicious IP addresses.\",\n    \"Implement multi-factor authentication to mitigate brute force risks.\",\n    \"Monitor for patterns of repeated failed logins on critical services.\",\n    \"Consider rate limiting and CAPTCHA challenges for login attempts.\"\n  ]\n}",
+      "validation_errors": [],
+      "stage1_decision": null,
+      "stage_skipped": null
+    },
+    {
+      "attack_type": "Reconnaissance",
+      "severity": "low",
+      "confidence": 0.8,
+      "mitre_techniques": [
+        "T1046",
+        "T1595"
+      ],
+      "explanation": "The network flow exhibits characteristics of a reconnaissance attempt based on the unidirectional nature, low packet rate per individual probe, and absence of payload. The long duration with almost zero byte transfer and no response from destination ports further supports this classification.",
+      "recommendations": [
+        "Monitor for similar patterns of SYN-only packets or stealth scans targeting multiple hosts/ports.",
+        "Implement intrusion detection systems (IDS) to alert on such reconnaissance activities.",
+        "Consider rate limiting and port scanning protections at the network perimeter."
+      ],
+      "record_description": "=== FLUXO TCP (CIC-IDS2017) ===\nDURAÇÃO: LONG (1.2min — conexão persistente ou C2 beaconing)\nTAXA DE PACOTES: QUASE ZERO (0.0 pkt/s — scan stealth, conexão presa ou fluxo abandonado)\nTAXA DE BYTES: ZERO\nFORMA DO FLUXO: UNIDIRECIONAL (sem resposta do destino — porta fechada, drop por firewall, scan stealth ou one-way attack/exfiltration)\nVOLUME: 1 pkts fwd (0 B) | 0 pkts bwd (0 B)\nFLAGS TCP: ACK=1, URG=1\nJANELA TCP: fwd=259, bwd=247 — janela pequena (raw scan, tcpdump)\nASSINATURAS DETECTADAS:\n  ⚠ ASSINATURA Reconnaissance lento (poucos pacotes, longa duração, sem resposta)",
+      "retrieved_context_titles": [
+        "Brute Force — Credential Attack (SSH/FTP/Web)",
+        "Benign — Tráfego de Rede Legítimo",
+        "Reconnaissance — Network Scanning and Probing",
+        "Network Flow Pattern Taxonomy — Quick Decision Reference",
+        "Infiltration — Insider Compromise & Lateral Movement"
+      ],
+      "rag_distances": [
+        0.8647533224670959,
+        0.9176424545683771,
+        0.9271248116537699,
+        0.9849958969329009,
+        0.9879479465978782
+      ],
+      "elapsed_seconds": 25.58,
+      "model_name": "foundation-sec-8b-instruct",
+      "ground_truth": "Brute Force",
+      "raw_llm_response": "{\n\n    \"attack_type\": \"Reconnaissance\",\n    \"severity\": \"low\",\n    \"confidence\": 0.8,\n    \"mitre_techniques\": [\"T1046\", \"T1595\"],\n    \"explanation\": \"The network flow exhibits characteristics of a reconnaissance attempt based on the unidirectional nature, low packet rate per individual probe, and absence of payload. The long duration with almost zero byte transfer and no response from destination ports further supports this classification.\",\n    \"recommendations\": [\n        \"Monitor for similar patterns of SYN-only packets or stealth scans targeting multiple hosts/ports.\",\n        \"Implement intrusion detection systems (IDS) to alert on such reconnaissance activities.\",\n        \"Consider rate limiting and port scanning protections at the network perimeter.\"\n    ]\n}",
+      "validation_errors": [],
+      "stage1_decision": null,
+      "stage_skipped": null
+    },
+    {
+      "attack_type": "DoS",
+      "severity": "medium",
+      "confidence": 0.85,
+      "mitre_techniques": [
+        "T1499",
+        "T1499.002"
+      ],
+      "explanation": "The network flow exhibits characteristics consistent with a Denial of Service (DoS) attack, particularly resembling the Slowloris technique based on the low packet rate and sustained unidirectional traffic pattern without significant payload transfer.",
+      "recommendations": [
+        "Investigate source IP for potential malicious activity.",
+        "Monitor for similar flows to identify ongoing or future attacks.",
+        "Implement rate limiting and anomaly detection mechanisms to mitigate such threats."
+      ],
+      "record_description": "=== FLUXO TCP (CIC-IDS2017) ===\nDURAÇÃO: MEDIUM (9.28s — sessão típica de aplicação)\nTAXA DE PACOTES: BAIXA (1.0 pkt/s — tráfego idle ou reconnaissance lento)\nTAXA DE BYTES: QUASE ZERO (12.2 B/s — sem payload significativo)\nFORMA DO FLUXO: UNIDIRECIONAL (sem resposta do destino — porta fechada, drop por firewall, scan stealth ou one-way attack/exfiltration)\nVOLUME: 9 pkts fwd (113B) | 0 pkts bwd (0 B)\nTAMANHO PKT: min=0, max=34, média=12 bytes — pacotes pequenos (controle/scan, sem payload real)\nFLAGS TCP: PSH=1\nJANELA TCP: fwd=29200, bwd=227",
+      "retrieved_context_titles": [
+        "DoS — Denial of Service Attack",
+        "Brute Force — Credential Attack (SSH/FTP/Web)",
+        "Reconnaissance — Network Scanning and Probing",
+        "Benign — Tráfego de Rede Legítimo",
+        "Network Flow Pattern Taxonomy — Quick Decision Reference"
+      ],
+      "rag_distances": [
+        0.8809522916672642,
+        0.9539766293745547,
+        0.9746280753841803,
+        0.9761874493951253,
+        0.995331995848146
+      ],
+      "elapsed_seconds": 24.04,
+      "model_name": "foundation-sec-8b-instruct",
+      "ground_truth": "Brute Force",
+      "raw_llm_response": "{\n\n    \"attack_type\": \"DoS\",\n    \"severity\": \"medium\", \"confidence\": 0.85,\n    \"mitre_techniques\": [\"T1499\", \"T1499.002\"],\n    \"explanation\": \"The network flow exhibits characteristics consistent with a Denial of Service (DoS) attack, particularly resembling the Slowloris technique based on the low packet rate and sustained unidirectional traffic pattern without significant payload transfer.\",\n    \"recommendations\": [\n        \"Investigate source IP for potential malicious activity.\",\n        \"Monitor for similar flows to identify ongoing or future attacks.\",\n        \"Implement rate limiting and anomaly detection mechanisms to mitigate such threats.\"\n    ]\n}",
+      "validation_errors": [],
+      "stage1_decision": null,
+      "stage_skipped": null
+    },
+    {
+      "attack_type": "DoS",
+      "severity": "high",
+      "confidence": 0.85,
+      "mitre_techniques": [
+        "T1499",
+        "T1499.002"
+      ],
+      "explanation": "The network flow exhibits characteristics consistent with a Denial of Service (DoS) attack, specifically a service exhaustion flood. The unidirectional traffic pattern, low byte rate, and lack of response from the target destination suggest an attempt to overwhelm the service with minimal resource usage per individual packet. This aligns with known DoS tactics such as Slowloris or similar techniques that aim to keep connections open without sending significant data.",
+      "recommendations": [
+        "Investigate the source IP for further evidence of malicious activity.",
+        "Monitor for additional flows from the same source exhibiting similar patterns.",
+        "Consider rate limiting and anomaly detection mechanisms to mitigate future DoS attempts."
+      ],
+      "record_description": "=== FLUXO TCP (CIC-IDS2017) ===\nDURAÇÃO: SHORT (17.9ms — handshake rápido ou requisição curta)\nTAXA DE PACOTES: BURST (168.0 pkt/s instantânea, mas fluxo curto — não sustentada; provável probe ou single shot)\nTAXA DE BYTES: BAIXA (1.5K B/s — controle ou keep-alive)\nFORMA DO FLUXO: UNIDIRECIONAL (sem resposta do destino — porta fechada, drop por firewall, scan stealth ou one-way attack/exfiltration)\nVOLUME: 3 pkts fwd (26B) | 0 pkts bwd (0 B)\nTAMANHO PKT: min=0, max=10135, média=1292 bytes\nFLAGS TCP: PSH=1\nJANELA TCP: fwd=8192, bwd=229",
+      "retrieved_context_titles": [
+        "DoS — Denial of Service Attack",
+        "Brute Force — Credential Attack (SSH/FTP/Web)",
+        "Reconnaissance — Network Scanning and Probing",
+        "DDoS — Distributed Denial of Service",
+        "Benign — Tráfego de Rede Legítimo"
+      ],
+      "rag_distances": [
+        0.8141039747457072,
+        0.9115959165118149,
+        0.9300333402091594,
+        0.9621712164235059,
+        0.9895556531316504
+      ],
+      "elapsed_seconds": 30.53,
+      "model_name": "foundation-sec-8b-instruct",
+      "ground_truth": "DDoS",
+      "raw_llm_response": "{\n\n    \"attack_type\": \"DoS\",\n    \"severity\": \"high\",\n    \"confidence\": 0.85,\n    \"mitre_techniques\": [\n        \"T1499\",\n        \"T1499.002\"\n    ],\n    \"explanation\": \"The network flow exhibits characteristics consistent with a Denial of Service (DoS) attack, specifically a service exhaustion flood. The unidirectional traffic pattern, low byte rate, and lack of response from the target destination suggest an attempt to overwhelm the service with minimal resource usage per individual packet. This aligns with known DoS tactics such as Slowloris or similar techniques that aim to keep connections open without sending significant data.\",\n    \"recommendations\": [\n        \"Investigate the source IP for further evidence of malicious activity.\",\n        \"Monitor for additional flows from the same source exhibiting similar patterns.\",\n        \"Consider rate limiting and anomaly detection mechanisms to mitigate future DoS attempts.\"\n    ]\n}",
+      "validation_errors": [],
+      "stage1_decision": null,
+      "stage_skipped": null
+    },
+    {
+      "attack_type": "Reconnaissance",
+      "severity": "low",
+      "confidence": 0.85,
+      "mitre_techniques": [
+        "T1046",
+        "T1595",
+        "T1595.001",
+        "T1595.002",
+        "T1018"
+      ],
+      "explanation": "The observed network flow is indicative of a reconnaissance activity, characterized by low packet rate and small packets with no payload, unidirectional TCP traffic (ACK-only), and probing behavior typical of port scanning or service enumeration.",
+      "recommendations": [
+        "Monitor for repeated patterns of SYN scans to multiple ports/hosts from the same source.",
+        "Implement intrusion detection/prevention systems to alert on such low-volume, high-frequency scan attempts.",
+        "Consider rate-limiting or blocking suspicious IP addresses engaging in reconnaissance activities."
+      ],
+      "record_description": "=== FLUXO TCP (CIC-IDS2017) ===\nDURAÇÃO: MEDIUM (3.90s — sessão típica de aplicação)\nTAXA DE PACOTES: BAIXA (1.3 pkt/s — tráfego idle ou reconnaissance lento)\nTAXA DE BYTES: QUASE ZERO (7.7 B/s — sem payload significativo)\nFORMA DO FLUXO: UNIDIRECIONAL (sem resposta do destino — porta fechada, drop por firewall, scan stealth ou one-way attack/exfiltration)\nVOLUME: 5 pkts fwd (30B) | 0 pkts bwd (0 B)\nTAMANHO PKT: min=6, max=6, média=6 bytes — pacotes pequenos (controle/scan, sem payload real)\nFLAGS TCP: ACK=1\nPADRÃO DE FLAGS: ACK-only (sem dados — TCP keep-alive, ACK scan ou conexão idle)\nJANELA TCP: fwd=256 — janela pequena (raw scan, tcpdump)",
+      "retrieved_context_titles": [
+        "Reconnaissance — Network Scanning and Probing",
+        "DoS — Denial of Service Attack",
+        "Benign — Tráfego de Rede Legítimo",
+        "Infiltration — Insider Compromise & Lateral Movement",
+        "Brute Force — Credential Attack (SSH/FTP/Web)"
+      ],
+      "rag_distances": [
+        0.7085689780885582,
+        0.7568289494231213,
+        0.8183108356828438,
+        0.8960375550531418,
+        0.9288022237051015
+      ],
+      "elapsed_seconds": 28.45,
+      "model_name": "foundation-sec-8b-instruct",
+      "ground_truth": "DDoS",
+      "raw_llm_response": "{\n\n    \"attack_type\": \"Reconnaissance\",\n    \"severity\": \"low\",\n    \"confidence\": 0.85,\n    \"mitre_techniques\": [\"T1046\", \"T1595\", \"T1595.001\", \"T1595.002\", \"T1018\"],\n    \"explanation\": \"The observed network flow is indicative of a reconnaissance activity, characterized by low packet rate and small packets with no payload, unidirectional TCP traffic (ACK-only), and probing behavior typical of port scanning or service enumeration.\",\n    \"recommendations\": [\n        \"Monitor for repeated patterns of SYN scans to multiple ports/hosts from the same source.\",\n        \"Implement intrusion detection/prevention systems to alert on such low-volume, high-frequency scan attempts.\",\n        \"Consider rate-limiting or blocking suspicious IP addresses engaging in reconnaissance activities.\"\n    ]\n}",
+      "validation_errors": [],
+      "stage1_decision": null,
+      "stage_skipped": null
+    },
+    {
+      "attack_type": "Brute Force",
+      "severity": "high",
+      "confidence": 0.95,
+      "mitre_techniques": [
+        "T1110",
+        "T1110.001",
+        "T1110.003",
+        "T1110.004"
+      ],
+      "explanation": "The network flow exhibits characteristics consistent with a Brute Force attack, such as high repetition from the same source to the same destination port (likely an authentication service), short-lived connections indicative of multiple login attempts, and lack of legitimate response patterns.",
+      "recommendations": [
+        "Investigate the source IP for potential malicious activity.",
+        "Monitor for similar patterns across other services.",
+        "Implement rate limiting on authentication services.",
+        "Consider multi-factor authentication to mitigate brute force risks."
+      ],
+      "record_description": "=== FLUXO TCP (CIC-IDS2017) ===\nDURAÇÃO: LONG (1.3min — conexão persistente ou C2 beaconing)\nTAXA DE PACOTES: QUASE ZERO (0.1 pkt/s — scan stealth, conexão presa ou fluxo abandonado)\nTAXA DE BYTES: QUASE ZERO (0.7 B/s — sem payload significativo)\nFORMA DO FLUXO: UNIDIRECIONAL (sem resposta do destino — porta fechada, drop por firewall, scan stealth ou one-way attack/exfiltration)\nVOLUME: 8 pkts fwd (56B) | 0 pkts bwd (0 B)\nTAMANHO PKT: min=0, max=5840, média=833 bytes\nFLAGS TCP: ACK=1\nPADRÃO DE FLAGS: ACK-only (sem dados — TCP keep-alive, ACK scan ou conexão idle)\nJANELA TCP: fwd=256, bwd=229 — janela pequena (raw scan, tcpdump)",
+      "retrieved_context_titles": [
+        "Brute Force — Credential Attack (SSH/FTP/Web)",
+        "DoS — Denial of Service Attack",
+        "Reconnaissance — Network Scanning and Probing",
+        "Benign — Tráfego de Rede Legítimo",
+        "Network Flow Pattern Taxonomy — Quick Decision Reference"
+      ],
+      "rag_distances": [
+        0.7238179216383687,
+        0.7973068599481107,
+        0.8385061921613233,
+        0.8863150370108046,
+        0.9240309651210711
+      ],
+      "elapsed_seconds": 26.82,
+      "model_name": "foundation-sec-8b-instruct",
+      "ground_truth": "DDoS",
+      "raw_llm_response": "{\n\n    \"attack_type\": \"Brute Force\",\n    \"severity\": \"high\",\n    \"confidence\": 0.95,\n    \"mitre_techniques\": [\"T1110\", \"T1110.001\", \"T1110.003\", \"T1110.004\"],\n    \"explanation\": \"The network flow exhibits characteristics consistent with a Brute Force attack, such as high repetition from the same source to the same destination port (likely an authentication service), short-lived connections indicative of multiple login attempts, and lack of legitimate response patterns.\",\n    \"recommendations\": [\n        \"Investigate the source IP for potential malicious activity.\",\n        \"Monitor for similar patterns across other services.\",\n        \"Implement rate limiting on authentication services.\",\n        \"Consider multi-factor authentication to mitigate brute force risks.\"\n    ]\n}",
+      "validation_errors": [],
+      "stage1_decision": null,
+      "stage_skipped": null
+    },
+    {
+      "attack_type": "Reconnaissance",
+      "severity": "low",
+      "confidence": 0.8,
+      "mitre_techniques": [
+        "T1046",
+        "T1595",
+        "T1595.001",
+        "T1595.002",
+        "T1018"
+      ],
+      "explanation": "The network flow exhibits characteristics consistent with reconnaissance activity, such as a unidirectional TCP flow with ACK-only flags indicating a potential scan or keep-alive probe without any response from the target (closed ports). The low packet rate and absence of payload further suggest this is not a DoS attack but rather an attempt to identify live hosts or open ports. This aligns with known reconnaissance patterns such as SYN scans, which are used for port enumeration.",
+      "recommendations": [
+        "Monitor for sequences of unidirectional ACK-only packets targeting multiple IP addresses and ports.",
+        "Implement rate limiting on suspicious ports to mitigate reconnaissance activities.",
+        "Use intrusion detection/prevention systems (IDS/IPS) with updated signatures to detect known scanning patterns."
+      ],
+      "record_description": "=== FLUXO TCP (CIC-IDS2017) ===\nDURAÇÃO: MEDIUM (3.00s — sessão típica de aplicação)\nTAXA DE PACOTES: BAIXA (0.7 pkt/s — tráfego idle ou reconnaissance lento)\nTAXA DE BYTES: ZERO\nFORMA DO FLUXO: UNIDIRECIONAL (sem resposta do destino — porta fechada, drop por firewall, scan stealth ou one-way attack/exfiltration)\nVOLUME: 2 pkts fwd (0 B) | 0 pkts bwd (0 B)\nFLAGS TCP: ACK=1\nPADRÃO DE FLAGS: ACK-only (sem dados — TCP keep-alive, ACK scan ou conexão idle)\nJANELA TCP: fwd=274 — janela pequena (raw scan, tcpdump)",
+      "retrieved_context_titles": [
+        "Reconnaissance — Network Scanning and Probing",
+        "DoS — Denial of Service Attack",
+        "Network Flow Pattern Taxonomy — Quick Decision Reference",
+        "Benign — Tráfego de Rede Legítimo",
+        "Network Sniffing - Linux"
+      ],
+      "rag_distances": [
+        0.920811131642015,
+        0.9291804721573431,
+        0.976860475641183,
+        0.9915376092022339,
+        0.9973188179937463
+      ],
+      "elapsed_seconds": 34.08,
+      "model_name": "foundation-sec-8b-instruct",
+      "ground_truth": "DoS",
+      "raw_llm_response": "{\n\n    \"attack_type\": \"Reconnaissance\",\n    \"severity\": \"low\",\n    \"confidence\": 0.8,\n    \"mitre_techniques\": [\"T1046\", \"T1595\", \"T1595.001\", \"T1595.002\", \"T1018\"],\n    \"explanation\": \"The network flow exhibits characteristics consistent with reconnaissance activity, such as a unidirectional TCP flow with ACK-only flags indicating a potential scan or keep-alive probe without any response from the target (closed ports). The low packet rate and absence of payload further suggest this is not a DoS attack but rather an attempt to identify live hosts or open ports. This aligns with known reconnaissance patterns such as SYN scans, which are used for port enumeration.\",\n    \"recommendations\": [\n        \"Monitor for sequences of unidirectional ACK-only packets targeting multiple IP addresses and ports.\",\n        \"Implement rate limiting on suspicious ports to mitigate reconnaissance activities.\",\n        \"Use intrusion detection/prevention systems (IDS/IPS) with updated signatures to detect known scanning patterns.\"\n    ]\n}",
+      "validation_errors": [],
+      "stage1_decision": null,
+      "stage_skipped": null
+    },
+    {
+      "attack_type": "Reconnaissance",
+      "severity": "low",
+      "confidence": 0.7,
+      "mitre_techniques": [
+        "T1499",
+        "T1499.002"
+      ],
+      "explanation": "The observed network flow is characteristic of a slow reconnaissance scan, indicated by the long duration with very low packet and byte rates, unidirectional traffic (no response from destination), and TCP FIN flags suggesting an incomplete or evasive handshake. This pattern aligns with techniques used for probing networks to identify vulnerabilities without immediately engaging in a full-scale attack.",
+      "recommendations": [
+        "Monitor for similar slow, unidirectional flows with low packet rates over extended periods.",
+        "Investigate the source IP address for potential malicious activity history.",
+        "Consider implementing rate limiting and anomaly detection mechanisms to mitigate reconnaissance activities."
+      ],
+      "record_description": "=== FLUXO TCP (CIC-IDS2017) ===\nDURAÇÃO: LONG (1.4min — conexão persistente ou C2 beaconing)\nTAXA DE PACOTES: QUASE ZERO (0.1 pkt/s — scan stealth, conexão presa ou fluxo abandonado)\nTAXA DE BYTES: QUASE ZERO (4.0 B/s — sem payload significativo)\nFORMA DO FLUXO: UNIDIRECIONAL (sem resposta do destino — porta fechada, drop por firewall, scan stealth ou one-way attack/exfiltration)\nVOLUME: 5 pkts fwd (338B) | 0 pkts bwd (0 B)\nTAMANHO PKT: min=0, max=5792, média=994 bytes\nFLAGS TCP: FIN=1\nPADRÃO DE FLAGS: FIN scan (fechamento sem handshake — evasão de IDS)\nASSINATURAS DETECTADAS:\n  ⚠ ASSINATURA Reconnaissance lento (poucos pacotes, longa duração, sem resposta)",
+      "retrieved_context_titles": [
+        "DoS — Denial of Service Attack",
+        "Brute Force — Credential Attack (SSH/FTP/Web)",
+        "Benign — Tráfego de Rede Legítimo",
+        "Infiltration — Insider Compromise & Lateral Movement",
+        "Reconnaissance — Network Scanning and Probing"
+      ],
+      "rag_distances": [
+        0.6936855550160117,
+        0.7479288410022427,
+        0.8631273422254517,
+        0.9165596286633376,
+        0.9466037083619745
+      ],
+      "elapsed_seconds": 28.17,
+      "model_name": "foundation-sec-8b-instruct",
+      "ground_truth": "DoS",
+      "raw_llm_response": "{\n\n  \"attack_type\": \"Reconnaissance\",\n  \"severity\": \"low\",\n  \"confidence\": 70,\n  \"mitre_techniques\": [\"T1499\", \"T1499.002\"],\n  \"explanation\": \"The observed network flow is characteristic of a slow reconnaissance scan, indicated by the long duration with very low packet and byte rates, unidirectional traffic (no response from destination), and TCP FIN flags suggesting an incomplete or evasive handshake. This pattern aligns with techniques used for probing networks to identify vulnerabilities without immediately engaging in a full-scale attack.\",\n  \"recommendations\": [\n    \"Monitor for similar slow, unidirectional flows with low packet rates over extended periods.\",\n    \"Investigate the source IP address for potential malicious activity history.\",\n    \"Consider implementing rate limiting and anomaly detection mechanisms to mitigate reconnaissance activities.\"\n  ]\n}",
+      "validation_errors": [],
+      "stage1_decision": null,
+      "stage_skipped": null
+    },
+    {
+      "attack_type": "Reconnaissance",
+      "severity": "low",
+      "confidence": 0.8,
+      "mitre_techniques": [
+        "T1046",
+        "T1595"
+      ],
+      "explanation": "The network flow is characterized by a unidirectional pattern with TCP ACK-only flags, indicating that it's likely a reconnaissance attempt. The low packet rate and the absence of data payload further support this classification. This flow does not match the typical signatures for DoS or benign traffic, which would have bidirectional communication and higher packet rates.",
+      "recommendations": [
+        "Monitor for similar unidirectional ACK-only flows to other hosts on the network.",
+        "Implement rate limiting and anomaly detection systems to identify potential reconnaissance activities.",
+        "Consider deploying host-based intrusion detection systems (HIDS) to detect suspicious scanning behavior."
+      ],
+      "record_description": "=== FLUXO TCP (CIC-IDS2017) ===\nDURAÇÃO: MEDIUM (1.00s — sessão típica de aplicação)\nTAXA DE PACOTES: BAIXA (2.0 pkt/s — tráfego idle ou reconnaissance lento)\nTAXA DE BYTES: ZERO\nFORMA DO FLUXO: UNIDIRECIONAL (sem resposta do destino — porta fechada, drop por firewall, scan stealth ou one-way attack/exfiltration)\nVOLUME: 2 pkts fwd (0 B) | 0 pkts bwd (0 B)\nFLAGS TCP: ACK=1\nPADRÃO DE FLAGS: ACK-only (sem dados — TCP keep-alive, ACK scan ou conexão idle)\nJANELA TCP: fwd=274 — janela pequena (raw scan, tcpdump)",
+      "retrieved_context_titles": [
+        "DoS — Denial of Service Attack",
+        "Reconnaissance — Network Scanning and Probing",
+        "Network Flow Pattern Taxonomy — Quick Decision Reference",
+        "Benign — Tráfego de Rede Legítimo",
+        "Network Sniffing - Linux"
+      ],
+      "rag_distances": [
+        0.9319579318096861,
+        0.9349844876295711,
+        0.9754324894052923,
+        0.9916251281400589,
+        0.9974573970615155
+      ],
+      "elapsed_seconds": 28.76,
+      "model_name": "foundation-sec-8b-instruct",
+      "ground_truth": "DoS",
+      "raw_llm_response": "{\n\n    \"attack_type\": \"Reconnaissance\",\n    \"severity\": \"low\",\n    \"confidence\": 0.8,\n    \"mitre_techniques\": [\"T1046\", \"T1595\"],\n    \"explanation\": \"The network flow is characterized by a unidirectional pattern with TCP ACK-only flags, indicating that it's likely a reconnaissance attempt. The low packet rate and the absence of data payload further support this classification. This flow does not match the typical signatures for DoS or benign traffic, which would have bidirectional communication and higher packet rates.\",\n    \"recommendations\": [\n        \"Monitor for similar unidirectional ACK-only flows to other hosts on the network.\",\n        \"Implement rate limiting and anomaly detection systems to identify potential reconnaissance activities.\",\n        \"Consider deploying host-based intrusion detection systems (HIDS) to detect suspicious scanning behavior.\"\n    ]\n}",
+      "validation_errors": [],
+      "stage1_decision": null,
+      "stage_skipped": null
+    },
+    {
+      "attack_type": "Reconnaissance",
+      "severity": "low",
+      "confidence": 0.8,
+      "mitre_techniques": [
+        "T1046",
+        "T1595",
+        "T1595.001",
+        "T1595.002",
+        "T1018"
+      ],
+      "explanation": "The network flow exhibits characteristics consistent with a slow reconnaissance scan, characterized by a long duration, low packet rate, and no response from the destination, indicative of probing activity without payload transfer. This aligns with known reconnaissance tactics such as SYN scans or stealth scans.",
+      "recommendations": [
+        "Monitor for similar flows with prolonged durations and minimal packet exchange to detect potential reconnaissance activities.",
+        "Implement intrusion detection systems (IDS) that can identify slow scan patterns and block or alert on them.",
+        "Consider segmenting the network to limit the scope of reconnaissance activities."
+      ],
+      "record_description": "=== FLUXO TCP (CIC-IDS2017) ===\nDURAÇÃO: LONG (1.1min — conexão persistente ou C2 beaconing)\nTAXA DE PACOTES: QUASE ZERO (0.0 pkt/s — scan stealth, conexão presa ou fluxo abandonado)\nTAXA DE BYTES: QUASE ZERO (0.0 B/s — sem payload significativo)\nFORMA DO FLUXO: UNIDIRECIONAL (sem resposta do destino — porta fechada, drop por firewall, scan stealth ou one-way attack/exfiltration)\nVOLUME: 1 pkts fwd (2B) | 0 pkts bwd (0 B)\nTAMANHO PKT: min=2, max=6, média=3 bytes — pacotes pequenos (controle/scan, sem payload real)\nFLAGS TCP: PSH=1\nJANELA TCP: fwd=1024\nASSINATURAS DETECTADAS:\n  ⚠ ASSINATURA Reconnaissance lento (poucos pacotes, longa duração, sem resposta)",
+      "retrieved_context_titles": [
+        "Reconnaissance — Network Scanning and Probing",
+        "Brute Force — Credential Attack (SSH/FTP/Web)",
+        "Benign — Tráfego de Rede Legítimo",
+        "Network Flow Pattern Taxonomy — Quick Decision Reference",
+        "Infiltration — Insider Compromise & Lateral Movement"
+      ],
+      "rag_distances": [
+        0.6971838597593969,
+        0.8019759456428137,
+        0.8660634288596101,
+        0.9152604715434984,
+        0.9373978474828338
+      ],
+      "elapsed_seconds": 29.7,
+      "model_name": "foundation-sec-8b-instruct",
+      "ground_truth": "Reconnaissance",
+      "raw_llm_response": "{\n\n    \"attack_type\": \"Reconnaissance\",\n    \"severity\": \"low\",\n    \"confidence\": 0.8,\n    \"mitre_techniques\": [\"T1046\", \"T1595\", \"T1595.001\", \"T1595.002\", \"T1018\"],\n    \"explanation\": \"The network flow exhibits characteristics consistent with a slow reconnaissance scan, characterized by a long duration, low packet rate, and no response from the destination, indicative of probing activity without payload transfer. This aligns with known reconnaissance tactics such as SYN scans or stealth scans.\",\n    \"recommendations\": [\n        \"Monitor for similar flows with prolonged durations and minimal packet exchange to detect potential reconnaissance activities.\",\n        \"Implement intrusion detection systems (IDS) that can identify slow scan patterns and block or alert on them.\",\n        \"Consider segmenting the network to limit the scope of reconnaissance activities.\"\n    ]\n}",
+      "validation_errors": [],
+      "stage1_decision": null,
+      "stage_skipped": null
+    },
+    {
+      "attack_type": "Reconnaissance",
+      "severity": "low",
+      "confidence": 0.7,
+      "mitre_techniques": [
+        "T1595",
+        "T1046"
+      ],
+      "explanation": "The network flow exhibits characteristics of a slow reconnaissance scan, with a long duration and minimal packet rate. The unidirectional nature without response indicates probing activity on closed ports or services that do not acknowledge the connection attempt.",
+      "recommendations": [
+        "Monitor for similar low-rate, long-duration flows to identify potential reconnaissance activities.",
+        "Implement intrusion detection systems (IDS) to alert on SYN-only scans and other stealth scanning techniques."
+      ],
+      "record_description": "=== FLUXO TCP (CIC-IDS2017) ===\nDURAÇÃO: LONG (1.6min — conexão persistente ou C2 beaconing)\nTAXA DE PACOTES: QUASE ZERO (0.0 pkt/s — scan stealth, conexão presa ou fluxo abandonado)\nTAXA DE BYTES: ZERO\nFORMA DO FLUXO: UNIDIRECIONAL (sem resposta do destino — porta fechada, drop por firewall, scan stealth ou one-way attack/exfiltration)\nVOLUME: 1 pkts fwd (0 B) | 0 pkts bwd (0 B)\nTAMANHO PKT: min=0, max=6, média=2 bytes — pacotes pequenos (controle/scan, sem payload real)\nFLAGS TCP: PSH=1\nJANELA TCP: fwd=29200\nASSINATURAS DETECTADAS:\n  ⚠ ASSINATURA Reconnaissance lento (poucos pacotes, longa duração, sem resposta)",
+      "retrieved_context_titles": [
+        "DoS — Denial of Service Attack",
+        "Brute Force — Credential Attack (SSH/FTP/Web)",
+        "Benign — Tráfego de Rede Legítimo",
+        "Reconnaissance — Network Scanning and Probing",
+        "Infiltration — Insider Compromise & Lateral Movement"
+      ],
+      "rag_distances": [
+        0.7303666439382659,
+        0.813668035675449,
+        0.8500006947528307,
+        0.897817625854083,
+        0.9744217220950061
+      ],
+      "elapsed_seconds": 23.45,
+      "model_name": "foundation-sec-8b-instruct",
+      "ground_truth": "Reconnaissance",
+      "raw_llm_response": "{\n\n    \"attack_type\": \"Reconnaissance\",\n    \"severity\": \"low\",\n    \"confidence\": 70,\n    \"mitre_techniques\": [\"T1595\", \"T1046\"],\n    \"explanation\": \"The network flow exhibits characteristics of a slow reconnaissance scan, with a long duration and minimal packet rate. The unidirectional nature without response indicates probing activity on closed ports or services that do not acknowledge the connection attempt.\",\n    \"recommendations\": [\n        \"Monitor for similar low-rate, long-duration flows to identify potential reconnaissance activities.\",\n        \"Implement intrusion detection systems (IDS) to alert on SYN-only scans and other stealth scanning techniques.\"\n    ]\n}",
+      "validation_errors": [],
+      "stage1_decision": null,
+      "stage_skipped": null
+    },
+    {
+      "attack_type": "Reconnaissance",
+      "severity": "low",
+      "confidence": 0.8,
+      "mitre_techniques": [
+        "T1046",
+        "T1595",
+        "T1595.001",
+        "T1595.002"
+      ],
+      "explanation": "The network flow is characterized by a unidirectional TCP connection with no response from the destination, indicating a potential reconnaissance activity such as port scanning or service enumeration. The low packet rate and small packet size suggest stealthy behavior typical of reconnaissance attempts rather than brute force attacks which would show higher packet rates and symmetric traffic patterns.",
+      "recommendations": [
+        "Monitor for similar unidirectional flows with SYN flags to multiple destinations, especially if they target a wide range of ports.",
+        "Implement rate limiting on suspicious ports to mitigate reconnaissance activities.",
+        "Consider deploying honeypots or decoy services to attract and analyze such probes."
+      ],
+      "record_description": "=== FLUXO TCP (CIC-IDS2017) ===\nDURAÇÃO: MEDIUM (35.00s — sessão típica de aplicação)\nTAXA DE PACOTES: QUASE ZERO (0.0 pkt/s — scan stealth, conexão presa ou fluxo abandonado)\nTAXA DE BYTES: ZERO\nFORMA DO FLUXO: UNIDIRECIONAL (sem resposta do destino — porta fechada, drop por firewall, scan stealth ou one-way attack/exfiltration)\nVOLUME: 1 pkts fwd (0 B) | 0 pkts bwd (0 B)\nTAMANHO PKT: min=0, max=6, média=2 bytes — pacotes pequenos (controle/scan, sem payload real)\nFLAGS TCP: PSH=1\nJANELA TCP: fwd=29200",
+      "retrieved_context_titles": [
+        "Reconnaissance — Network Scanning and Probing",
+        "Brute Force — Credential Attack (SSH/FTP/Web)",
+        "Infiltration — Insider Compromise & Lateral Movement",
+        "Network Flow Pattern Taxonomy — Quick Decision Reference",
+        "Benign — Tráfego de Rede Legítimo"
+      ],
+      "rag_distances": [
+        0.9284857298303206,
+        0.9342386058532592,
+        0.9539983766131208,
+        0.9684991431484549,
+        0.9785562160371005
+      ],
+      "elapsed_seconds": 30.72,
+      "model_name": "foundation-sec-8b-instruct",
+      "ground_truth": "Reconnaissance",
+      "raw_llm_response": "{\n\n  \"attack_type\": \"Reconnaissance\",\n  \"severity\": \"low\",\n  \"confidence\": 0.8,\n  \"mitre_techniques\": [\"T1046\", \"T1595\", \"T1595.001\", \"T1595.002\"],\n  \"explanation\": \"The network flow is characterized by a unidirectional TCP connection with no response from the destination, indicating a potential reconnaissance activity such as port scanning or service enumeration. The low packet rate and small packet size suggest stealthy behavior typical of reconnaissance attempts rather than brute force attacks which would show higher packet rates and symmetric traffic patterns.\",\n  \"recommendations\": [\n    \"Monitor for similar unidirectional flows with SYN flags to multiple destinations, especially if they target a wide range of ports.\",\n    \"Implement rate limiting on suspicious ports to mitigate reconnaissance activities.\",\n    \"Consider deploying honeypots or decoy services to attract and analyze such probes.\"\n  ]\n}",
+      "validation_errors": [],
+      "stage1_decision": null,
+      "stage_skipped": null
+    },
+    {
+      "attack_type": "Reconnaissance",
+      "severity": "low",
+      "confidence": 0.8,
+      "mitre_techniques": [
+        "T1046",
+        "T1595"
+      ],
+      "explanation": "The network flow exhibits characteristics of reconnaissance due to its unidirectional nature with a low packet rate and no response from the destination, indicative of single probes or stealth scans. The TCP flags show PSH=1 which suggests an attempt to push data without waiting for an acknowledgment, often seen in quick probe packets used during reconnaissance activities.",
+      "recommendations": [
+        "Monitor for similar unidirectional flows with low packet rates targeting multiple hosts or ports.",
+        "Implement rate limiting and anomaly detection on network perimeters to identify stealthy scanning behaviors.",
+        "Consider deploying intrusion prevention systems (IPS) that can block or alert on known reconnaissance patterns."
+      ],
+      "record_description": "=== FLUXO TCP (CIC-IDS2017) ===\nDURAÇÃO: MEDIUM (5.21s — sessão típica de aplicação)\nTAXA DE PACOTES: BAIXA (0.6 pkt/s — tráfego idle ou reconnaissance lento)\nTAXA DE BYTES: ZERO\nFORMA DO FLUXO: UNIDIRECIONAL (sem resposta do destino — porta fechada, drop por firewall, scan stealth ou one-way attack/exfiltration)\nVOLUME: 3 pkts fwd (0 B) | 0 pkts bwd (0 B)\nFLAGS TCP: PSH=1\nJANELA TCP: fwd=29200, bwd=28960",
+      "retrieved_context_titles": [
+        "Network Flow Pattern Taxonomy — Quick Decision Reference",
+        "DoS — Denial of Service Attack",
+        "Reconnaissance — Network Scanning and Probing",
+        "Benign — Tráfego de Rede Legítimo",
+        "Suspicious Use of /dev/tcp"
+      ],
+      "rag_distances": [
+        0.7737784736890463,
+        0.8665918667578366,
+        0.8708427554034807,
+        0.9642347165979039,
+        0.9972176862193366
+      ],
+      "elapsed_seconds": 29.33,
+      "model_name": "foundation-sec-8b-instruct",
+      "ground_truth": "Unknown",
+      "raw_llm_response": "{\n\n    \"attack_type\": \"Reconnaissance\",\n    \"severity\": \"low\",\n    \"confidence\": 0.8,\n    \"mitre_techniques\": [\"T1046\", \"T1595\"],\n    \"explanation\": \"The network flow exhibits characteristics of reconnaissance due to its unidirectional nature with a low packet rate and no response from the destination, indicative of single probes or stealth scans. The TCP flags show PSH=1 which suggests an attempt to push data without waiting for an acknowledgment, often seen in quick probe packets used during reconnaissance activities.\"\n \t,\"recommendations\": [\n     \"Monitor for similar unidirectional flows with low packet rates targeting multiple hosts or ports.\",\n     \"Implement rate limiting and anomaly detection on network perimeters to identify stealthy scanning behaviors.\",\n     \"Consider deploying intrusion prevention systems (IPS) that can block or alert on known reconnaissance patterns.\"\n   ]\n}",
+      "validation_errors": [],
+      "stage1_decision": null,
+      "stage_skipped": null
+    }
+  ]
+}
