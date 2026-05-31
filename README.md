@@ -1,34 +1,102 @@
 # Triagem Explicada de Incidentes de Rede com LLM e RAG Local
 
-**Projeto Transformador I** — Bacharelado em Ciência da Computação, PUCPR  
+**Projeto Transformador I** — Bacharelado em Ciência da Computação, PUCPR
 Turma 7B — Grupo 3
 
 ---
 
 ## Visão Geral
 
-Sistema **100% local** de triagem automática de incidentes de rede. A arquitetura
-combina duas camadas complementares: um **classificador clássico de ML** que filtra,
-com rigor estatístico, o tráfego benigno óbvio; e um **LLM especializado** que produz
-a triagem **explicada** (categoria + severidade + técnicas MITRE + justificativa +
-recomendações) dos casos que importam, contextualizada por RAG local.
+Sistema **100% local** de triagem automática de incidentes de rede. Nenhum dado sai
+da máquina — LLM, embeddings, modelos de ML e base vetorial rodam localmente.
+
+A arquitetura combina **duas camadas complementares**:
+
+1. **Camada de ML clássico** — um classificador binário (Benign vs Threat) que filtra,
+   com rigor estatístico e latência de milissegundos, o tráfego benigno em massa.
+2. **Camada de LLM + RAG** — um modelo especializado em cibersegurança que produz a
+   **triagem explicada** (categoria + severidade + técnicas MITRE + justificativa +
+   recomendações) dos casos que importam, contextualizada por uma base de conhecimento local.
+
+> A pergunta de pesquisa não é "o LLM classifica melhor que ML?" (não classifica, e não
+> precisa). É: **"um pipeline local de duas camadas produz triagens corretas na detecção
+> e úteis na explicação, sem enviar dados para fora?"**
+
+### Componentes
 
 - **Estudo comparativo de ML** (Benign vs Threat): até 10 modelos clássicos
   (RandomForest, ExtraTrees, HistGradientBoosting, **XGBoost**, **LightGBM**,
   DecisionTree, LogisticRegression, GaussianNB, KNN, MLP) + **ensemble por soft-voting**,
-  treinados nos datasets completos com cross-validation (média ± desvio), ROC-AUC e PR-AUC
-- **LLM especializado em cibersegurança** (Foundation-Sec-8B-Instruct via Ollama) com prompt chain-of-thought + few-shot examples
-- **RAG local** com MITRE ATT&CK Enterprise (691 técnicas) + Sigma Rules (3.728 regras) + **base curada de descrições de classes IDS** (16 docs canônicos)
-- **Cross-encoder re-ranking** (`ms-marco-MiniLM-L-6-v2`) para melhorar a qualidade dos top-K do RAG
-- **Pré-classificador** (RF, melhor modelo ou ensemble) para filtrar Benigns óbvios antes do LLM
-- **Avaliação rica**: métricas por classe, matriz de confusão, agregação de runs (pool de
-  registros para N relevante) e **scoring automático da qualidade das explicações**
-  (validade MITRE, relevância, consistência, ancoragem no RAG)
-- **Dois datasets de benchmark**: CIC-IDS2017 (~2.8M registros) e UNSW-NB15 (~2.5M registros)
-- **Baterias automatizadas** com progresso/ETA sempre visível no terminal e saída em
-  formato agregável (manifesto JSONL pronto para pandas)
+  treinados nos datasets **completos** com cross-validation (média ± desvio), ROC-AUC e PR-AUC.
+- **LLM especializado** (Foundation-Sec-8B-Instruct via Ollama) com prompt
+  chain-of-thought + few-shot e saída JSON estruturada.
+- **RAG local**: MITRE ATT&CK Enterprise (691 técnicas) + Sigma Rules (3.728 regras)
+  + **base curada de descrições de classes IDS** (16 docs canônicos), com
+  **cross-encoder re-ranking** (`ms-marco-MiniLM-L-6-v2`).
+- **Pré-classificador** plugável (RF, melhor modelo ou ensemble) que filtra Benigns antes do LLM.
+- **Avaliação rica**: métricas por classe, matriz de confusão, agregação de runs e
+  **scoring automático da qualidade das explicações** (validade MITRE, relevância,
+  consistência, ancoragem no RAG).
+- **Dois datasets**: CIC-IDS2017 (~2,83M registros) e UNSW-NB15 (~2,54M registros).
+- **Baterias automatizadas** com progresso/ETA no terminal e saída agregável (manifesto JSONL).
 
-Nenhum dado sai da máquina — LLM, embeddings, modelos de ML e base vetorial rodam localmente.
+---
+
+## Resultados Principais (Data Science)
+
+Resumo dos achados; tabelas completas em [Resultados Detalhados](#resultados-detalhados).
+
+1. **A camada de ML é o que torna o sistema viável.** Em tráfego realista (~87% benigno),
+   o LLM isolado é inutilizável — classifica **todo benigno como ameaça** (acurácia
+   binária **0,125**, falso-positivo em massa). Com o pré-filtro de ML: binária **1,000**
+   e **~7× mais rápido** (o benigno pula o LLM). *É o argumento central da arquitetura.*
+
+2. **O ML clássico satura a detecção binária** (~99% em ambos os datasets, treinado em
+   milhões de registros com cross-validation de desvio mínimo). **XGBoost** é o melhor
+   (CIC: F1 0,9976 / ROC-AUC 1,0000; UNSW: F1 0,9731 / ROC-AUC 0,9998).
+
+3. **ML e LLM são complementares, não redundantes.** Decompondo a acurácia exata: o ML
+   acerta o benigno; o **RAG melhora a categorização das ameaças** (no CIC). Juntos
+   superam cada parte isolada.
+
+4. **A contribuição do RAG depende do dataset**: ajuda no CIC, é neutro/negativo no
+   UNSW (protocolos abstratos → contexto recuperado menos pertinente).
+
+5. **Teto de acurácia exata é limitação intrínseca do dado**, não do modelo: um fluxo
+   individual de DDoS, DoS e Reconnaissance é morfologicamente quase idêntico — visível
+   na matriz de confusão (viés sistemático para "Reconnaissance").
+
+6. **O two-stage (Stage 1 binário do LLM) é nocivo** e foi descartado, com evidência
+   consistente (recall despenca, FN em massa).
+
+---
+
+## Arquitetura — as duas camadas
+
+```
+                       registro / incidente de rede
+                                   │
+        ┌──────────────────────────▼───────────────────────────┐
+        │  CAMADA 1 — Classificador clássico (Benign vs Threat) │
+        │  RandomForest / XGBoost(best) / Ensemble              │
+        │  treinado nos datasets completos, ~99% acc            │
+        └──────────────────────────┬───────────────────────────┘
+                                   │
+            Benign (conf ≥ 0,95) ──┤──►  decide Benign, PULA o LLM (ms)
+                                   │
+              Threat / incerteza ──▼
+        ┌──────────────────────────────────────────────────────┐
+        │  CAMADA 2 — LLM especializado + RAG                   │
+        │  descrição textual → recupera contexto (MITRE/Sigma/  │
+        │  classes IDS) → cross-encoder rerank → prompt CoT →   │
+        │  JSON: categoria + severidade + MITRE + explicação +  │
+        │  recomendações                                        │
+        └──────────────────────────────────────────────────────┘
+```
+
+Cada camada é avaliada pelo que entrega: a Camada 1 pela **detecção** (rigor
+estatístico em milhões de registros); a Camada 2 pela **qualidade da explicação** dos
+casos relevantes.
 
 ---
 
@@ -37,75 +105,48 @@ Nenhum dado sai da máquina — LLM, embeddings, modelos de ML e base vetorial r
 ```
 tcc/
 ├── src/
-│   ├── config.py                   # Caminhos e constantes centralizados
-│   ├── utils/logger.py             # Logger padronizado
+│   ├── config.py                   # Caminhos, constantes, label maps
 │   ├── data/                       # Etapa 1: ingestão e pré-processamento
 │   │   ├── loader.py               # Carrega CSVs brutos (CIC e UNSW)
 │   │   ├── preprocessor.py         # Limpeza, encoding, normalização
 │   │   └── pipeline.py             # Orquestrador CLI da Etapa 1
 │   ├── rag/                        # Etapa 2: base de conhecimento RAG
 │   │   ├── download.py             # Baixa MITRE ATT&CK e Sigma Rules
-│   │   ├── sources/
-│   │   │   ├── mitre.py            # Parser STIX 2.1 → documentos textuais
-│   │   │   ├── sigma.py            # Parser YAML → documentos textuais
-│   │   │   └── ids_classes.py      # Descrições canônicas das 15 classes IDS (curado)
-│   │   ├── embeddings.py           # Wrapper sentence-transformers (all-MiniLM-L6-v2)
-│   │   ├── vectorstore.py          # Wrapper ChromaDB (cosine similarity)
-│   │   ├── retriever.py            # Busca semântica + cross-encoder re-rank (top-20 → top-5)
+│   │   ├── sources/{mitre,sigma,ids_classes}.py  # Parsers + base curada
+│   │   ├── embeddings.py           # sentence-transformers (all-MiniLM-L6-v2)
+│   │   ├── vectorstore.py          # ChromaDB (cosine), auto-reparo
+│   │   ├── retriever.py            # Busca densa + cross-encoder rerank (top-20→top-5)
 │   │   └── pipeline.py             # Orquestrador CLI da Etapa 2
-│   ├── ml/                         # Classificadores clássicos (Benign vs Threat)
-│   │   ├── models.py               # Registry de modelos + ensemble soft-voting + prep de features
-│   │   ├── benchmark.py            # Estudo comparativo (CV, ROC-AUC, plots, relatórios)
-│   │   └── preclassifier.py        # Treino RF (atalho) + PreClassifier (rf/best/ensemble)
-│   ├── evaluation/                 # Avaliação e análise de resultados
-│   │   ├── metrics.py              # Métricas por classe, confusão, agregação de runs
-│   │   ├── explanation_quality.py  # Scoring automático da qualidade das explicações
-│   │   └── runlog.py               # Persistência padronizada (schema v3 + manifesto JSONL)
-│   ├── utils/
-│   │   ├── logger.py               # Logger padronizado (UTF-8)
-│   │   └── progress.py             # Progresso/ETA das baterias
-│   └── llm/                        # Etapa 3: triagem com LLM
-│       ├── text_converter.py       # v2: features categóricas (FLOOD/HIGH/...) + assinaturas
-│       ├── llm_client.py           # Cliente HTTP para Ollama (/api/chat + JSON schema)
-│       ├── prompts.py              # v2: chain-of-thought + 6 few-shot examples
-│       ├── triage.py               # TriageEngine: RF pre-filter + 2-stage + RAG + LLM
-│       └── pipeline.py             # Orquestrador CLI da Etapa 3 (--use-rf, --two-stage)
-├── tests/                          # 78 testes unitários
-│   ├── test_text_converter.py
-│   ├── test_prompts.py
-│   ├── test_llm_client.py
-│   ├── test_pipeline_helpers.py
-│   └── test_preprocessor.py
-├── data/
-│   ├── raw/                        # Datasets brutos (não versionados)
-│   │   ├── cic-ids2017/            # CSVs do CIC-IDS2017
-│   │   └── unsw-nb15/              # CSVs do UNSW-NB15
-│   ├── processed/                  # Parquets gerados pela Etapa 1 (não versionados)
-│   ├── rag/
-│   │   ├── sources/                # MITRE ATT&CK JSON + Sigma Rules YAMLs
-│   │   └── chromadb/               # Índice vetorial persistente (não versionado)
-│   └── ml_models/                  # Random Forest treinados (não versionados)
-│       ├── rf_cic.joblib
-│       ├── rf_unsw.joblib
-│       └── rf_meta.json            # Métricas de treino dos RFs
-├── models/
-│   ├── Modelfile                   # Receita para registrar o GGUF no Ollama
-│   └── foundation-sec-8b-instruct-q8_0.gguf  # Modelo LLM (não versionado)
-├── outputs/
-│   ├── triage_runs/                # Resultados organizados por run
-│   │   └── run_<timestamp>_<tags>_n<N>/
-│   │       └── results.json
-│   └── benchmarks/                 # Bateria longa
-│       └── bench_<timestamp>/
-│           ├── benchmark.log
-│           ├── summary.json        # Todas as runs detalhadas
-│           └── ranking.json        # Ranking final por configuração
-├── run_evaluation.ps1              # Script: RAG + no-RAG sequencial
-├── run_benchmark.ps1               # Bateria 2-3h: 6 configs × tamanhos × seeds
-├── .env                            # Configuração local (não versionar)
+│   ├── ml/                         # Etapa 2.5: classificadores clássicos
+│   │   ├── models.py               # Registry de modelos + ensemble + prep de features
+│   │   ├── benchmark.py            # Estudo comparativo (CV, ROC/PR-AUC, plots, relatórios)
+│   │   └── preclassifier.py        # Atalho RF + PreClassifier (rf/best/ensemble)
+│   ├── llm/                        # Etapa 3: triagem com LLM
+│   │   ├── text_converter.py       # features → descrição discriminativa + assinaturas
+│   │   ├── llm_client.py           # Cliente Ollama (/api/chat + JSON Schema)
+│   │   ├── prompts.py              # chain-of-thought + few-shot
+│   │   ├── triage.py               # TriageEngine: pré-filtro + 2-stage + RAG + LLM
+│   │   └── pipeline.py             # Orquestrador CLI da Etapa 3
+│   ├── evaluation/                 # Avaliação e análise
+│   │   ├── metrics.py              # Por classe, confusão, agregação de runs
+│   │   ├── explanation_quality.py  # Scoring automático das explicações
+│   │   └── runlog.py               # Persistência padronizada (schema v3 + manifesto)
+│   └── utils/{logger,progress}.py  # Logger UTF-8 + progresso/ETA das baterias
+├── tests/                          # 97 testes unitários (pytest)
+├── data/                           # (raw/processed/chromadb/ml_models — NÃO versionados)
+├── models/Modelfile                # Receita do GGUF no Ollama (modelo não versionado)
+├── outputs/                        # Resultados (ver "Formato de Saída")
+├── run_benchmark.ps1               # Ablation do LLM (7 configs × tamanhos × seeds)
+├── run_ml_benchmark.ps1            # Estudo comparativo de ML
+├── run_night.ps1                   # Orquestrador overnight (CIC + UNSW + high-benign)
+├── run_evaluation.ps1              # RAG vs no-RAG sequencial (rápido)
 ├── requirements.txt
 └── README.md
 ```
+
+> **Não versionados** (regeneráveis, e/ou grandes demais para o GitHub): `data/raw/`,
+> `data/processed/`, `data/rag/chromadb/`, `data/ml_models/` (`*.joblib`), o GGUF do
+> modelo. Todos são reconstruídos pelos comandos de setup.
 
 ---
 
@@ -113,465 +154,341 @@ tcc/
 
 ### Pré-requisitos
 
-- Python 3.11+
-- Git
-- [Ollama](https://ollama.com/download) instalado
-- GPU NVIDIA recomendada (funciona em CPU, mas é ~5x mais lento)
-
-### Instalar dependências
+- Python 3.11+ · Git · [Ollama](https://ollama.com/download) · GPU NVIDIA recomendada (~5× mais rápido que CPU)
 
 ```powershell
 python -m venv .venv
-.\.venv\Scripts\Activate.ps1       # Windows
-# source .venv/bin/activate        # Linux/Mac
+.\.venv\Scripts\Activate.ps1        # Windows  (Linux/Mac: source .venv/bin/activate)
 pip install -r requirements.txt
 ```
 
-### Configurar .env
-
-Crie o arquivo `.env` na raiz do projeto:
+Crie o `.env` na raiz:
 
 ```env
 OLLAMA_HOST=http://localhost:11434
 OLLAMA_MODEL=foundation-sec-8b-instruct
 ```
 
-### Resumo do setup completo
-
-Para colocar o projeto rodando do zero, você precisa executar **na ordem**:
-
-1. **Etapa 1** — Pré-processar datasets (Parquets)
-2. **Etapa 2** — Baixar e indexar base RAG (MITRE + Sigma + classes IDS)
-3. **Etapa 2.5** — Treinar Random Forest pre-classificador
-4. **Etapa 3** — Registrar modelo Foundation-Sec no Ollama
-
-Cada etapa é detalhada nas seções abaixo. Veja também a seção
-[Comandos Rápidos](#comandos-rápidos--setup-completo-do-zero) para um único bloco
-copy-paste com todos os comandos em ordem.
+Ordem das etapas: **1** pré-processar → **2** indexar RAG → **2.5** treinar ML →
+**3** registrar LLM no Ollama. Bloco copy-paste completo em
+[Comandos Rápidos](#comandos-rápidos--setup-completo-do-zero).
 
 ---
 
 ## Etapa 1 — Pré-processamento dos Datasets
 
-### 1.1 Obter os Datasets
-
-**CIC-IDS2017** → [unb.ca/cic/datasets/ids-2017.html](https://www.unb.ca/cic/datasets/ids-2017.html)  
-Coloque os CSVs em `data/raw/cic-ids2017/`
-
-**UNSW-NB15** → [research.unsw.edu.au/projects/unsw-nb15-dataset](https://research.unsw.edu.au/projects/unsw-nb15-dataset)  
-Coloque os CSVs em `data/raw/unsw-nb15/`
-
-### 1.2 Rodar o Pipeline
+Coloque os CSVs em `data/raw/cic-ids2017/` ([CIC-IDS2017](https://www.unb.ca/cic/datasets/ids-2017.html))
+e `data/raw/unsw-nb15/` ([UNSW-NB15](https://research.unsw.edu.au/projects/unsw-nb15-dataset)).
 
 ```powershell
-# Ambos os datasets (~2 minutos)
-python -m src.data.pipeline
-
-# Só um dataset
-python -m src.data.pipeline --dataset cic
-python -m src.data.pipeline --dataset unsw
-
-# Teste rápido com 10% dos dados
-python -m src.data.pipeline --sample 0.1
+python -m src.data.pipeline                 # ambos (~2 min)
+python -m src.data.pipeline --dataset cic   # só um
+python -m src.data.pipeline --sample 0.1    # teste rápido (10%)
 ```
 
-### 1.3 O que é feito
+**O que é feito**: remove colunas identificadoras (IPs, portas, timestamps —
+prevenção de data leakage); troca infinitos/NaN por mediana; clipa negativos
+impossíveis; remove 8 colunas constantes e 25+ com correlação >0,95; mapeia rótulos
+para 15 categorias unificadas; normaliza MinMax no dataset unificado.
 
-- Remove colunas identificadoras (IPs, portas, timestamps)
-- Substitui valores infinitos por NaN, preenche NaN com mediana
-- Clipa valores negativos impossíveis (contadores de bytes/pacotes)
-- Remove 8 colunas constantes e 25+ colunas altamente correlacionadas (>0.95)
-- Mapeia rótulos para categorias unificadas entre os dois datasets
-- Normaliza features numéricas para [0,1] no dataset unificado (Min-Max)
-- Salva: `cic_ids2017_clean.parquet`, `unsw_nb15_clean.parquet`, `unified_dataset.parquet`
-
-### 1.4 Saída
-
-```
-data/processed/
-├── cic_ids2017_clean.parquet      # 2.83M registros, não normalizado
-├── unsw_nb15_clean.parquet        # 2.54M registros, não normalizado
-├── unified_dataset.parquet        # 5.37M registros, normalizado [0,1]
-├── normalization_params.json      # Min/max de cada coluna
-└── preprocessing_report.json      # Relatório completo
-```
+**Saída** (`data/processed/`): `cic_ids2017_clean.parquet` (2,83M, bruto),
+`unsw_nb15_clean.parquet` (2,54M, bruto), `unified_dataset.parquet` (normalizado),
++ `normalization_params.json`, `preprocessing_report.json`.
 
 ---
 
 ## Etapa 2 — Base de Conhecimento RAG
 
-### Pré-requisitos
-
-- Git instalado (para clonar Sigma Rules)
-- GPU recomendada para geração de embeddings (~1-2 min com GPU, ~5 min em CPU)
-
-### 2.1 Baixar as Fontes
-
 ```powershell
-python -m src.rag.download
+python -m src.rag.download                          # MITRE STIX (~49MB) + Sigma Rules
+python -m src.rag.pipeline --test                   # indexa + testa busca
+python -m src.rag.pipeline --reset --skip-download  # re-indexa do zero
 ```
 
-Baixa:
-- MITRE ATT&CK Enterprise STIX 2.1 JSON (~49MB)
-- Sigma Rules (repositório completo, ~4.189 arquivos YAML)
+> Ao editar a base curada (`src/rag/sources/ids_classes.py`), rode
+> `python -m src.rag.pipeline --reset --skip-download`.
 
-### 2.2 Rodar o Pipeline RAG
-
-```powershell
-# Indexar + rodar testes de busca semântica
-python -m src.rag.pipeline --test
-
-# Só indexar (sem testes)
-python -m src.rag.pipeline
-
-# Re-indexar do zero (necessário ao adicionar novas fontes)
-python -m src.rag.pipeline --reset --skip-download
-
-# Pular download (se fontes já existem)
-python -m src.rag.pipeline --skip-download --test
-```
-
-> **Importante**: ao atualizar a base curada de classes IDS (`src/rag/sources/ids_classes.py`),
-> rode `python -m src.rag.pipeline --reset --skip-download` para re-indexar o ChromaDB.
-
-### 2.3 Saída
-
-```
-data/rag/chromadb/    # ~4.435 documentos indexados
-                      # 16 descrições canônicas das classes IDS (curado)
-                      # 691 técnicas MITRE ATT&CK
-                      # 3.728 regras Sigma
-```
-
-Os testes de busca validam a qualidade do RAG com 8 queries de cibersegurança (SSH brute force, DDoS, SQL injection, etc.).
+**Saída** (`data/rag/chromadb/`): ~4.435 documentos — 16 descrições canônicas das
+classes IDS (curado) + 691 técnicas MITRE + 3.728 regras Sigma.
 
 ---
 
 ## Etapa 2.5 — Classificadores clássicos e estudo comparativo
 
-A camada de ML clássico filtra o tráfego benigno óbvio antes do LLM, resolvendo o
-problema de TN=0 e acelerando a triagem. Como esse filtro carrega boa parte do
-desempenho do sistema, ele é tratado como objeto de estudo: um **benchmark de até 10
-modelos** treinados nos datasets completos, com cross-validation e métricas robustas.
-
-### 2.5.1 Treinar e comparar todos os modelos
+A camada de ML filtra o tráfego benigno antes do LLM (resolve o TN=0 e acelera). Como
+ela carrega boa parte do desempenho, é tratada como objeto de estudo: um **benchmark
+de até 10 modelos** nos datasets completos, com cross-validation.
 
 ```powershell
-# Estudo comparativo completo (CIC + UNSW), amostra 200k/dataset, CV 5-fold (~10-30 min)
-python -m src.ml.benchmark
+python -m src.ml.benchmark                  # CIC + UNSW, 200k/dataset, CV 5-fold (~10-30 min)
+python -m src.ml.benchmark --sample-size 0  # datasets completos (várias horas)
+python -m src.ml.benchmark --no-slow --cv-folds 3   # pula KNN/MLP (rápido)
 
-# Datasets completos (todos os registros — varias horas)
-python -m src.ml.benchmark --sample-size 0
-
-# Mais rápido: pula KNN e MLP (os mais lentos)
-python -m src.ml.benchmark --no-slow --cv-folds 3
-
-# Bateria via script (cabeçalho + progresso/ETA no terminal)
-.\run_ml_benchmark.ps1
-.\run_ml_benchmark.ps1 -Full          # datasets completos
-.\run_ml_benchmark.ps1 -NoSlow
+.\run_ml_benchmark.ps1            # via script, com progresso/ETA
+.\run_ml_benchmark.ps1 -Full      # datasets completos
 ```
 
-Atalho legado (treina só o Random Forest, sem comparação):
+**Saída**: modelos em `data/ml_models/` (`rf_<ds>`, `best_<ds>`, `ensemble_<ds>`,
+`.joblib`) e relatórios em `outputs/ml_benchmark/bench_<ts>/`
+(`model_comparison.{json,md}` + gráficos `metrics_`, `roc_`, `confusion_`, `importance_`).
 
-```powershell
-python -m src.ml.preclassifier --sample-size 200000
-```
-
-### 2.5.2 Modelos avaliados
-
-RandomForest, ExtraTrees, HistGradientBoosting, XGBoost, LightGBM, DecisionTree,
-LogisticRegression, GaussianNB, KNN, MLP, e um **Ensemble** (soft-voting dos melhores).
-XGBoost e LightGBM entram automaticamente se instalados; caso contrário o benchmark
-usa só os modelos do scikit-learn.
-
-### 2.5.3 Saída
-
-```
-data/ml_models/
-├── rf_<ds>.joblib        # Random Forest (compatível com o pipeline)
-├── best_<ds>.joblib      # Melhor modelo do benchmark (por F1)
-├── ensemble_<ds>.joblib  # Ensemble soft-voting
-└── rf_meta.json          # Métricas resumidas do RF
-
-outputs/ml_benchmark/bench_<timestamp>/
-├── model_comparison.json # Métricas completas de todos os modelos
-├── model_comparison.md   # Tabela comparativa pronta para o manuscrito
-├── metrics_<ds>.png      # Barras F1 / ROC-AUC por modelo
-├── roc_<ds>.png          # Curvas ROC sobrepostas
-├── confusion_<ds>.png    # Matriz de confusão do melhor modelo
-└── importance_<ds>.png   # Top-15 features (modelo de árvore)
-```
-
-Os ensembles de árvore atingem ROC-AUC ~0.999 (CIC) e capturam ~98% dos Benigns com
-conf≥95%; modelos lineares e Naive Bayes ficam bem abaixo — evidência de que as
-features de fluxo são fortemente não-lineares. **Risco controlado**: ~0.04% das
-ameaças são classificadas como Benign com conf≥95%.
+Resultados em [Resultados Detalhados → ML](#a-estudo-comparativo-de-ml).
 
 ---
 
 ## Etapa 3 — Triagem com LLM
 
-### 3.1 Instalar o Modelo
-
-O modelo Foundation-Sec-8B-Instruct não está disponível em GGUF direto pelo Ollama. É necessário baixar e importar manualmente:
+### 3.1 Instalar o modelo
 
 ```powershell
-# Baixar o GGUF (~8.5GB) — executar na pasta tcc/
+# GGUF (~8.5GB) — na pasta tcc/
 python -c "from huggingface_hub import hf_hub_download; hf_hub_download('fdtn-ai/Foundation-Sec-8B-Instruct-Q8_0-GGUF', filename='foundation-sec-8b-instruct-q8_0.gguf', local_dir='./models')"
-
-# Registrar no Ollama
 ollama create foundation-sec-8b-instruct -f models\Modelfile
-
-# Confirmar
 ollama list
 ```
 
-### 3.2 Iniciar o Servidor Ollama
-
-**Em um terminal separado** (manter aberto durante toda a triagem):
+### 3.2 Rodar (com `ollama serve` aberto em outro terminal)
 
 ```powershell
-ollama serve
+# Stack recomendada: pré-filtro (melhor modelo = XGBoost) + RAG + rerank
+python -m src.llm.pipeline --n 10 --stratified --use-rf --clf-kind best
+
+python -m src.llm.pipeline --n 10 --stratified                 # sem pré-filtro
+python -m src.llm.pipeline --n 10 --stratified --no-rag        # baseline
+python -m src.llm.pipeline --n 10 --dataset cic --stratified   # só CIC
+python -m src.llm.pipeline --index 12345                       # registro específico
 ```
 
-### 3.3 Rodar Triagem Individual
-
-```powershell
-# Stack completa recomendada: RF + RAG + cross-encoder rerank (default)
-python -m src.llm.pipeline --n 5 --stratified --use-rf
-
-# Tudo ligado: RF + 2-stage + RAG + rerank
-python -m src.llm.pipeline --n 5 --stratified --use-rf --two-stage
-
-# 5 registros por classe (estratificado) — sem RF
-python -m src.llm.pipeline --n 5 --stratified
-
-# 10 registros aleatórios do dataset unificado
-python -m src.llm.pipeline --n 10
-
-# Só CIC-IDS2017
-python -m src.llm.pipeline --n 10 --dataset cic --stratified
-
-# Baseline SEM RAG (para comparação)
-python -m src.llm.pipeline --n 5 --stratified --no-rag
-
-# Sem cross-encoder (RAG denso puro, mais rápido)
-python -m src.llm.pipeline --n 5 --stratified --no-rerank
-
-# Registro específico pelo índice
-python -m src.llm.pipeline --index 12345
-
-# Salvar em caminho customizado
-python -m src.llm.pipeline --n 20 --output outputs/meu_teste.json
-```
-
-#### Flags disponíveis
+#### Flags
 
 | Flag | Default | Descrição |
 |------|---------|-----------|
-| `--n N` | 10 | Número de registros a triar |
-| `--stratified` | false | Amostragem estratificada (igual nº por classe) |
-| `--dataset {unified,cic,unsw}` | unified | Qual dataset usar |
-| `--seed N` | aleatório | Seed da amostragem (reprodutibilidade) |
-| `--no-rag` | false | Desativa RAG (baseline) |
-| `--no-rerank` | false | Desativa cross-encoder re-rank (RAG denso direto) |
+| `--n N` | 10 | Nº de registros a triar |
+| `--stratified` | false | Amostragem estratificada (≈igual por classe) |
+| `--dataset {unified,cic,unsw}` | unified | Qual dataset |
+| `--seed N` | aleatório | Seed da amostragem |
+| `--no-rag` / `--no-rerank` | false | Desativa RAG / cross-encoder |
 | `--use-rf` | false | Ativa o pré-classificador clássico |
-| `--clf-kind {rf,best,ensemble}` | rf | Variante do pré-classificador a usar |
-| `--rf-threshold 0.95` | 0.95 | Confiança mínima do classificador para skipar LLM |
-| `--run-dir PATH` | outputs/triage_runs | Pasta base onde salvar a run |
-| `--two-stage` | false | Ativa Stage 1 binário (Benign/Threat rápido) |
-| `--rag-threshold 0.55` | 0.55 | Threshold de descarte do RAG (distância densa) |
-| `--top-k N` | 5 | Quantos docs RAG buscar |
+| `--clf-kind {rf,best,ensemble}` | rf | Variante do pré-classificador |
+| `--two-stage` | false | Stage 1 binário (experimental — **nocivo**, ver resultados) |
+| `--rf-threshold 0.95` / `--rag-threshold 0.55` / `--top-k 5` | — | Limiares |
+| `--run-dir PATH` | outputs/triage_runs | Pasta base da run |
 
-### 3.4 Rodar Avaliação Completa (RAG + No-RAG automaticamente)
+### 3.3 Baterias
 
 ```powershell
-# Roda RAG e no-RAG em sequência e exibe comparativo
-.\run_evaluation.ps1
+# Ablation do LLM — 7 configs × tamanhos × seeds (com progresso/ETA)
+.\run_benchmark.ps1 -SeedsPerConfig 3 -Sizes 30,50
+.\run_benchmark.ps1 -Dataset cic -Sizes 40          # só CIC
+.\run_benchmark.ps1 -Stratified:$false -Sizes 60    # tráfego natural (high-benign)
+.\run_benchmark.ps1 -Quick                          # validação rápida
 
-# Customizado
-.\run_evaluation.ps1 -N 3
-.\run_evaluation.ps1 -N 2 -Dataset cic
+# Orquestrador overnight: CIC + UNSW + high-benign em sequência
+.\run_night.ps1
 ```
 
-### 3.5 Bateria Longa Automatizada (2-3h)
-
-Roda 6 configurações × N tamanhos × seeds e gera ranking final:
-
-```powershell
-# Bateria padrão (~2-3h): 6 configs × 3 tamanhos × 2 seeds = 36 runs
-.\run_benchmark.ps1
-
-# Versão rápida (~10min) para validar
-.\run_benchmark.ps1 -Quick
-
-# Customizada
-.\run_benchmark.ps1 -SeedsPerConfig 3 -Sizes 3,5,10
-.\run_benchmark.ps1 -SkipBaseline   # pular config baseline (mais rápido)
-```
-
-**Configurações testadas**:
-1. `baseline` — sem RAG
-2. `rag_only` — RAG denso puro
-3. `rag_rerank` — RAG + cross-encoder
-4. `rag_rerank_2stage` — + Stage 1 binário
-5. `rag_rerank_rf` — RAG + Random Forest pre-filter
-6. `full_stack` — tudo: RF + 2-stage + RAG rerank
-
-**Output**: `outputs/benchmarks/bench_<timestamp>/{summary.json, ranking.json, benchmark.log}`
-
-### 3.6 Saída
-
-Cada run cria uma subpasta própria em `outputs/triage_runs/`. O nome contém as tags
-das features usadas:
-
-```
-outputs/triage_runs/
-└── run_20260503_160000_rag_rerank_rf_stratified_n9/   # rag + rerank + rf + stratified, N=9
-    └── results.json
-```
-
-O JSON contém:
-
-```json
-{
-  "n_records": 9,
-  "n_valid": 9,
-  "avg_elapsed_seconds": 20.3,
-  "accuracy_exact": 0.11,
-  "accuracy_binary": 0.67,
-  "precision": 0.80,
-  "recall": 0.75,
-  "confusion": {"tp": 6, "tn": 0, "fp": 1, "fn": 2},
-  "results": [
-    {
-      "attack_type": "DDoS",
-      "severity": "high",
-      "confidence": 0.85,
-      "mitre_techniques": ["T1498", "T1498.001"],
-      "explanation": "O fluxo apresenta padrão de inundação volumétrica...",
-      "recommendations": ["Ativar rate limiting", "Bloquear IPs de origem"],
-      "record_description": "Fluxo TCP duração 0.5s, 230 pacotes...",
-      "retrieved_context_titles": ["T1498 - Network DoS", ...],
-      "rag_distances": [0.37, 0.40, 0.47],
-      "ground_truth": "DDoS",
-      "elapsed_seconds": 20.1,
-      "validation_errors": []
-    }
-  ]
-}
-```
-
-O console exibe métricas detalhadas:
-
-```
-RESUMO DA TRIAGEM (9 registros)
-Acurácia (categoria exata): 1/9 (11.1%)
-Acurácia (ameaça vs benigno): 6/9 (66.7%) | Precisão: 80.0% | Recall: 75.0% | F1: 77.4%
-  TP=6 TN=0 FP=1 FN=2
-Predições por categoria: {'Botnet': 7, 'Generic': 2}
-Distribuição de severidade: {'high': 3, 'medium': 5, 'low': 1}
-Confiança média: 0.78
-Tempo médio por triagem: 20.34s
-```
+**7 configurações do ablation**: `baseline_norag`, `norag_rf`, `rag_only`,
+`rag_rerank`, `rag_rerank_rf`, `rag_rerank_best` (recomendada), `rag_rerank_rf_2stage`.
 
 ---
 
-## Desempenho Observado
+## Metodologia de Avaliação
 
-| Configuração | Tempo/registro | Total 50 registros |
-|---|---|---|
-| Q8_0 + RTX 5060 8GB (22/33 camadas na GPU) | ~20s | ~17 min |
-| Q4_K_M + GPU completa | ~8-10s | ~7 min |
-| CPU only | ~90-120s | ~1.5h |
+**Métricas** (operando sobre os registros triados):
+
+- **Acurácia exata**: categoria predita = ground truth (com aliases).
+- **Acurácia binária** (métrica primária operacional): ameaça vs benigno.
+- **Precisão / Recall / F1 / Especificidade** + matriz de confusão (TP/TN/FP/FN).
+  FN = ameaça não detectada = o erro mais crítico.
+- **Por classe** (precisão/recall/F1/suporte), **macro-F1** e **weighted-F1**.
+- **Qualidade da explicação** (proxy automático): validade MITRE, relevância,
+  consistência, ancoragem no RAG.
+
+**Ablation study**: as configurações são executadas com o **mesmo seed** de amostragem
+— a única variável é a combinação de componentes ativos.
+
+**Agregação para significância**: cada run individual triou poucos registros; o módulo
+`metrics.py --aggregate` faz **pool dos registros** de várias runs da mesma config,
+elevando o N efetivo. A camada de ML, por outro lado, é avaliada diretamente em
+milhões de registros com **cross-validation** (média ± desvio).
 
 ---
 
-## Avaliação e Análise de Resultados
+## Resultados Detalhados
 
-Cada run de triagem grava um `results.json` no **schema v3** (blocos `run`, `summary`,
-`metrics`, `explanation_quality`, `records`) e adiciona uma linha ao manifesto
-`outputs/triage_runs/runs_index.jsonl`. O manifesto é a "pilha de dados" do projeto —
-uma linha achatada por run, pronta para `pandas.read_json(..., lines=True)`.
+### A. Estudo comparativo de ML
+
+Treinado nos datasets **completos** (CIC 2,83M / UNSW 2,54M), holdout 80/20
+estratificado, seed 42, cross-validation 5-fold.
+
+**CIC-IDS2017 — melhor: XGBoost**
+
+| Modelo | F1 | ROC-AUC | CV F1 (μ±σ) |
+|---|---|---|---|
+| **XGBoost** | **0,9976** | **1,0000** | 0,9963 ± 0,0009 |
+| Ensemble (soft-voting) | 0,9974 | 0,9999 | — |
+| RandomForest | 0,9970 | 0,9999 | 0,9937 ± 0,0013 |
+| LightGBM | 0,9958 | 0,9991 | 0,9965 ± 0,0004 |
+| LogisticRegression | 0,7648 | 0,9735 | 0,7828 ± 0,0277 |
+| GaussianNB | 0,5501 | 0,8349 | 0,5574 ± 0,0091 |
+
+**UNSW-NB15 — melhor: XGBoost**: F1 **0,9731**, ROC-AUC 0,9998, CV F1 0,9671 ± 0,0020.
+
+**Leitura**: ensembles de árvore e boosting saturam a tarefa (~0,99); modelos lineares
+e Naive Bayes despencam — evidência de que as features de fluxo são **fortemente
+não-lineares**. Desvios de CV minúsculos ⇒ resultado estável (significância estatística).
+Pré-filtro: ~98-99% de cobertura de Benigns com conf≥0,95; **risco** (ameaça filtrada
+como benigna) < 0,03%.
+
+### B. Ablation do LLM (unified, N=116/config — pool de 4 runs)
+
+| Configuração | Exata | Binária | TN | FN | Expl. |
+|---|---|---|---|---|---|
+| baseline (norag) | 0,078 | 0,905 | 0 | 0 | 0,945 |
+| norag-rf | 0,164 | **1,000** | 11 | 0 | 0,951 |
+| rag | 0,112 | 0,897 | 0 | 1 | 0,954 |
+| rag-rerank | 0,129 | 0,905 | 0 | 0 | 0,934 |
+| rag-rerank-rf | 0,215 | **1,000** | 11 | 0 | 0,931 |
+| **rag-rerank-best** | **0,224** | **1,000** | 11 | 0 | 0,936 |
+| rag-rerank-rf-2stage | 0,155 | 0,457 | 11 | **63** | 0,951 |
+
+**Decomposição da exata** (acerto de benigno vs de ameaça): o **pré-filtro ML** acerta
+o benigno (0 → 11); o **RAG+rerank** melhora a categoria da ameaça (9 → 15 acertos).
+Juntos somam — *complementaridade*. O **two-stage** é catastrófico (FN=63).
+A binária das configs com pré-filtro é **1,000 com desvio 0** entre seeds (robusto).
+
+### C. Por dataset (run_night, 3 seeds/fase)
+
+| | melhor config | exata | RAG ajuda? |
+|---|---|---|---|
+| **CIC** | rag-rerank-rf | **0,377** | **Sim** (rag 0,245 vs baseline 0,057) |
+| **UNSW** | norag-rf | 0,222 | **Não** (rag-rerank 0,044 < baseline 0,089) |
+
+A utilidade do RAG é **dependente do dataset**: ajuda no CIC, neutro/negativo no UNSW.
+
+### D. Tráfego realista (high-benign, ~87% benigno) — o resultado mais forte
+
+| | Binária | FP | s/registro |
+|---|---|---|---|
+| LLM-só (baseline/rag) | **0,125** | 63/63 benignos | ~30 s |
+| **Com pré-filtro ML** | **1,000** | 0 | **~4 s (≈7× mais rápido)** |
+
+Sem a camada de ML, o LLM **soterra o analista de falsos-positivos** (classifica todo
+benigno como ameaça). Com ela: detecção perfeita e ~7× mais rápido (benigno pula o LLM).
+
+> **Honestidade**: a acurácia *exata* nas configs com pré-filtro neste cenário (~0,93)
+> é inflada pela predominância de benignos — a leitura correta aqui é a **binária** e o
+> **throughput**, não a exata.
+
+### E. Teto da acurácia exata (limitação do dado)
+
+A matriz de confusão revela **viés sistemático para Reconnaissance**: DDoS, Generic,
+Exploits etc. são quase sempre preditos como Reconnaissance, porque um fluxo individual
+(poucos pacotes, curta duração, unidirecional) casa com a assinatura de scan. Só
+classes com assinatura de fluxo distinta (DoS, Reconnaissance) recebem acerto. Não é
+falha do modelo — é a **ambiguidade intrínseca do fluxo isolado**, já que os rótulos
+foram atribuídos observando padrões **agregados** de milhares de fluxos.
+
+### Desempenho de inferência (LLM)
+
+| Configuração | Tempo/registro |
+|---|---|
+| Q8_0 + RTX 5060 8GB (22/33 camadas na GPU) | ~20-28 s |
+| Q4_K_M + GPU completa | ~8-10 s |
+| CPU only | ~90-120 s |
+
+---
+
+## Qualidade das Explicações
+
+`src/evaluation/explanation_quality.py` mede um **proxy automático** da explicação
+gerada pelo LLM (a contribuição central do projeto):
+
+- **validade MITRE** — as técnicas T#### citadas existem no ATT&CK? (anti-alucinação,
+  validado contra os IDs reais extraídos do STIX);
+- **relevância** — a explicação menciona os sinais reais do registro?
+- **consistência** — severidade coerente com a categoria, confiança em [0,1]?
+- **ancoragem** — a explicação se apoia no contexto RAG recuperado?
+
+O composto fica ~0,93-0,96 nas runs. **É um indicador de triagem, não prova de
+qualidade** — deve ser complementado por **avaliação humana** (planejada, 20-30 casos
+com rubrica), validando o proxy.
 
 ```powershell
-# Métricas detalhadas de uma run (por classe + matriz de confusão + gráficos)
-python -m src.evaluation.metrics outputs/triage_runs/run_...
-
-# Agregar várias runs (pool de registros -> N estatisticamente relevante)
-python -m src.evaluation.metrics --aggregate "outputs/triage_runs/*rag-rerank-rf*"
-
-# Qualidade das explicações (validade MITRE, relevância, consistência, ancoragem)
 python -m src.evaluation.explanation_quality outputs/triage_runs/run_...
 ```
 
-Carregar o manifesto para análise/gráficos:
+---
+
+## Formato de Saída e Análise
+
+Cada run grava `results.json` no **schema v3** e adiciona uma linha ao manifesto
+`outputs/triage_runs/runs_index.jsonl` — a "pilha de dados" do projeto, pronta para pandas.
+
+**Nome de pasta parseável**: `run_<timestamp>_<dataset>_<config>_n<N>_seed<seed>/`
+
+**`results.json`** (blocos): `run` (metadados + flags), `summary` (linha achatada),
+`metrics` (por classe + confusão), `explanation_quality` (agregado), `records` (cada
+registro: attack_type, severity, confidence, mitre_techniques, explanation,
+recommendations, retrieved_context_titles, rag_distances, ground_truth, …).
+
+```powershell
+# métricas detalhadas de uma run (por classe + confusão + gráficos)
+python -m src.evaluation.metrics outputs/triage_runs/run_...
+# agregar várias runs (pool -> N relevante)
+python -m src.evaluation.metrics --aggregate "outputs/triage_runs/*rag-rerank-best*"
+```
 
 ```python
 import pandas as pd
 df = pd.read_json("outputs/triage_runs/runs_index.jsonl", lines=True)
-df.groupby("config")[["accuracy_binary", "f1", "explanation_composite"]].mean()
+df.groupby(["dataset", "config"])[["accuracy_binary", "f1", "explanation_composite"]].mean()
 ```
-
-## Testes
-
-```powershell
-# Rodar todos os testes unitários (97)
-python -m pytest tests/ -v
-
-# Só um módulo
-python -m pytest tests/test_prompts.py -v
-python -m pytest tests/test_text_converter.py -v
-```
-
-Cobertura de testes:
-- `test_text_converter.py` — conversão de registros CIC/UNSW em descrição textual
-- `test_prompts.py` — validação de schema JSON da triagem
-- `test_llm_client.py` — parsing de JSON do LLM (com trailing commas, preambles, etc.)
-- `test_pipeline_helpers.py` — amostragem estratificada, matching de labels
-- `test_preprocessor.py` — limpeza, normalização, correlação
-- `test_rag_parsing.py` — parsing de fontes RAG (MITRE/Sigma)
-- `test_ml_models.py` — prep de features, registry de modelos, ensemble soft-voting
-- `test_evaluation.py` — métricas, qualidade das explicações, runlog, progresso
 
 ---
 
-## Problemas Conhecidos e Soluções
+## Jornada Experimental — o que observamos e como superamos
 
-### ChromaDB corrompido ao inicializar
+Cada decisão de design veio de uma observação empírica durante o desenvolvimento. Esta
+é a espinha dorsal de data science do projeto — o raciocínio por trás de cada escolha:
 
-O `vectorstore.py` detecta e corrige automaticamente. Se persistir:
+| Observação (o que vimos) | Resposta (como superamos) |
+|---|---|
+| O LLM **nunca prediz Benign** (TN=0): a binária travava em ~0,90 e, em tráfego realista, despencava para **0,125** (todo benigno virava falso-positivo) | Adicionamos a **camada de ML clássico** como pré-filtro → TN restaurado, binária **1,000** e ~7× mais rápido |
+| A acurácia **exata é baixa (~15%) e estável** mesmo no melhor modelo | Diagnóstico: **teto intrínseco do dado** — fluxo isolado de DDoS/DoS/Recon é ambíguo. Confirmado na matriz de confusão (viés sistemático para Reconnaissance) |
+| Runs de **7-10 registros** não têm significância estatística | **Pool de runs** (agregação) eleva o N efetivo; e o **benchmark de ML** roda em milhões de registros com cross-validation |
+| O **RAG às vezes piorava** a classificação (recuperava contexto irrelevante) | **Filtro de distância densa > 0,55** descarta o contexto quando o melhor doc é semanticamente distante |
+| O **rerank parecia atrapalhar** (visto em 1 seed) | Mais seeds revelaram que era **ruído** — com 4 runs o rerank ajuda a categorização |
+| A amostragem estratificada **sub-amostra o benigno** (~1 por run) | Criamos a condição **high-benign** (amostragem natural) → ~60 benignos/config, firmando a especificidade |
+| Estratificado no `unified` **não separa os datasets** | Runs **CIC-only / UNSW-only** → descoberta: o RAG ajuda no CIC, mas é neutro/negativo no UNSW |
+| O **two-stage** (Stage 1 binário do LLM) derrubava o recall | **Desativado**, com evidência consistente (FN em massa nos 3 cenários) |
+| A explicação (contribuição central) **não era medida** | Módulo de **qualidade das explicações** (validade MITRE anti-alucinação, relevância, consistência, ancoragem) |
+| Modelos full-data **> 100MB** travavam o `git push` | Modelos **fora do versionamento** (regeneráveis via `src.ml.benchmark`) |
 
-```powershell
-Remove-Item -Recurse -Force data\rag\chromadb
-python -m src.rag.pipeline --reset
-```
+### Correções de qualidade de dado (rigor)
 
-### Modelo de embeddings sem internet
+Alguns bugs eram de **dados**, não de código — e detectá-los foi parte do trabalho de data science:
 
-O `embeddings.py` tenta `local_files_only=True` primeiro. O modelo fica em cache em `~/.cache/huggingface/`. Funciona offline após o primeiro download.
+- **`Flow Packets/s` do CIC vinha em microssegundos** → gerava taxas absurdas (FLOOD
+  para um fluxo de 2 pacotes em 48s). Corrigido recalculando a taxa real (`pacotes / duração`).
+- **A triagem carregava o `unified_dataset` normalizado [0,1]** → descrições vazias
+  ("0 pacotes", "duração instantânea"). Corrigido para usar os parquets individuais
+  (valores brutos), que o `text_converter` precisa.
+- **A confiança do LLM vinha em 0-100** (ex.: `85`) → normalizada para [0,1] **antes** da validação.
+- **Bug no loop de seeds da bateria** (variável `$s` colidindo) rodava só metade das
+  runs → corrigido; re-execução completa.
 
-### Ollama não encontra o modelo
+## Evolução do Projeto (resumo por versão)
 
-```powershell
-ollama list    # ver nome exato
-# Ajustar OLLAMA_MODEL no .env com o nome exato mostrado
-```
+| Versão | Foco | Principais entregas |
+|--------|------|---------------------|
+| **v1** | Pipeline inicial | Pré-processamento, RAG (MITRE+Sigma), triagem LLM básica |
+| **v2** | Qualidade do LLM | Prompts chain-of-thought + few-shot, cross-encoder rerank, base curada de classes IDS, Random Forest pré-filtro, text_converter discriminativo |
+| **v3** | Rigor + coerência | **Estudo comparativo de 10 modelos** (XGBoost/LightGBM) + ensemble, **framework de avaliação** (métricas por classe, agregação, **qualidade das explicações**), **formato de saída padronizado** (schema v3 + manifesto), baterias por dataset e high-benign, progresso/ETA, logger UTF-8. Testes 78 → 97 |
 
-### Pipeline LLM lento (>60s/registro)
-
-O modelo Q8_0 (8.5GB) pode não caber inteiro na GPU. Verifique com `ollama serve` quantas camadas estão offloaded. Alternativa: baixar o Q4_K_M (~4.5GB) que cabe em GPUs com 6GB+ VRAM:
-
-```powershell
-.\.venv\Scripts\python.exe -c "from huggingface_hub import hf_hub_download; hf_hub_download('fdtn-ai/Foundation-Sec-8B-Q4_K_M-GGUF', filename='foundation-sec-8b-q4_k_m.gguf', local_dir='./models')"
-```
-
-Atualize `models\Modelfile` e `.env` com o novo nome.
-
-### LLM classifica tudo como Botnet/C2
-
-É um comportamento esperado para registros UNSW-NB15 com protocolos desconhecidos. O `triage.py` tem um filtro de qualidade RAG (distância > 0.55 descarta o contexto) para reduzir esse viés. Para análise no TCC, use a métrica binária (ameaça vs benigno) em vez da acurácia por categoria exata.
+A v3 atacou os pontos fracos de rigor: a detecção passou de "amostras de 7-10
+registros" para "milhões de registros com cross-validation", e a contribuição central
+(as explicações) passou a ser **medida**.
 
 ---
 
@@ -579,92 +496,84 @@ Atualize `models\Modelfile` e `.env` com o novo nome.
 
 | Decisão | Escolha | Motivo |
 |---|---|---|
-| Embeddings | all-MiniLM-L6-v2 (384 dims) | Equilíbrio velocidade/qualidade, funciona offline |
+| Duas camadas (ML + LLM) | ML detecta, LLM explica | Cada um onde tem vantagem; LLM-só inviável em tráfego real |
+| Pré-filtro | XGBoost (`best`) ou ensemble | Melhor F1/cobertura; ensemble é mais conservador (menor risco) |
+| ML por dataset | CIC e UNSW separados | Features distintas — modelo único exigiria imputação massiva |
+| Embeddings | all-MiniLM-L6-v2 (384d) | Equilíbrio velocidade/qualidade, offline |
 | Banco vetorial | ChromaDB (cosine) | Persistência local, zero dependência externa |
-| Normalização | Min-Max [0,1] | Tráfego de rede não é gaussiano — Z-score inadequado |
-| Chunking RAG | 1 documento por técnica/regra | Granularidade ideal para recuperação semântica |
-| LLM endpoint | `/api/chat` (não `/api/generate`) | Aplica template Llama 3 corretamente (system prompt) |
-| Structured output | JSON Schema no Ollama | Grammar sampling garante campos obrigatórios |
-| Dataset para triagem | Parquets individuais (não normalizados) | `text_converter` precisa de valores brutos |
-| Temperatura LLM | 0.2 | Consistência > criatividade para triagem de segurança |
-| Filtro RAG | Descarta se dist > 0.55 | Contexto irrelevante piora classificação |
+| LLM endpoint | `/api/chat` (não `/generate`) | Aplica o template Llama 3 (system prompt) |
+| Structured output | JSON Schema no Ollama | Grammar sampling garante os campos obrigatórios |
+| Dataset p/ triagem | Parquets individuais (não normalizados) | `text_converter` precisa de valores brutos |
+| Temperatura LLM | 0.2 | Consistência > criatividade |
+| Filtro de qualidade RAG | descarta se dist densa > 0,55 | Contexto irrelevante piora a classificação |
+| Two-stage | desativado | Nocivo (recall despenca) — evidência no ablation |
+
+---
+
+## Testes
+
+```powershell
+python -m pytest tests/ -v        # 97 testes
+```
+
+Cobertura: `test_text_converter`, `test_prompts`, `test_llm_client`,
+`test_pipeline_helpers`, `test_preprocessor`, `test_rag_parsing` (parsing MITRE/Sigma),
+`test_ml_models` (prep de features, registry, ensemble), `test_evaluation` (métricas,
+qualidade das explicações, runlog, progresso).
+
+---
+
+## Problemas Conhecidos e Soluções
+
+| Sintoma | Causa | Solução |
+|---|---|---|
+| `Error loading hnsw index` | ChromaDB corrompido | `Remove-Item -Recurse data\rag\chromadb` + `python -m src.rag.pipeline --reset` |
+| `getaddrinfo failed` no embedding | Sem internet | `local_files_only=True` já tratado; cache em `~/.cache/huggingface/` |
+| Ollama não encontra o modelo | Nome errado no `.env` | `ollama list` → ajustar `OLLAMA_MODEL` |
+| Pipeline LLM >60s/registro | Q8_0 não cabe na GPU | Usar Q4_K_M (`fdtn-ai/Foundation-Sec-8B-Q4_K_M-GGUF`) + atualizar Modelfile/.env |
+| Push rejeitado no git | `.joblib` > 100MB | Modelos não são versionados (gitignored) — regenere com `src.ml.benchmark` |
 
 ---
 
 ## Comandos Rápidos — Setup Completo do Zero
 
-Estes são todos os passos necessários para colocar o projeto rodando do zero, em ordem:
-
 ```powershell
-# ── 0. Ativar venv (toda nova sessão) ──
-.\.venv\Scripts\Activate.ps1
-
-# ── 1. Instalar dependências (uma vez) ──
-pip install -r requirements.txt
-
-# ── 2. Criar .env ──
-# OLLAMA_HOST=http://localhost:11434
-# OLLAMA_MODEL=foundation-sec-8b-instruct
-
-# ── 3. Pré-processar datasets (~2 min, uma vez) ──
-python -m src.data.pipeline
-
-# ── 4. Baixar fontes RAG (~1 min, uma vez) ──
-python -m src.rag.download
-
-# ── 5. Indexar base RAG com classes IDS curadas (~2 min, uma vez OU após mudar fontes) ──
-python -m src.rag.pipeline --reset --skip-download
-
-# ── 6. Treinar e comparar os classificadores de ML (~10-30 min, gera ensemble) ──
-python -m src.ml.benchmark
-# (atalho rápido só do RF: python -m src.ml.preclassifier --sample-size 200000)
-
-# ── 7. Registrar o modelo Foundation-Sec no Ollama (uma vez) ──
-# Baixar GGUF (~8.5GB):
+.\.venv\Scripts\Activate.ps1                          # 0. venv
+pip install -r requirements.txt                       # 1. deps
+# 2. criar .env (OLLAMA_HOST, OLLAMA_MODEL)
+python -m src.data.pipeline                            # 3. pré-processar (~2 min)
+python -m src.rag.download                             # 4. baixar fontes RAG
+python -m src.rag.pipeline --reset --skip-download     # 5. indexar RAG
+python -m src.ml.benchmark                             # 6. treinar/comparar ML (gera ensemble)
+# 7. registrar o LLM no Ollama:
 python -c "from huggingface_hub import hf_hub_download; hf_hub_download('fdtn-ai/Foundation-Sec-8B-Instruct-Q8_0-GGUF', filename='foundation-sec-8b-instruct-q8_0.gguf', local_dir='./models')"
 ollama create foundation-sec-8b-instruct -f models\Modelfile
-
-# ── 8. Iniciar Ollama (terminal separado, manter aberto) ──
-ollama serve
-
-# ── 9. Validar com run rápida (~2 min) ──
-python -m src.llm.pipeline --n 2 --stratified --use-rf
-
-# ── 10. Avaliação completa RAG vs no-RAG ──
-.\run_evaluation.ps1 -N 5
-
-# ── 11. Bateria longa para resultados estatísticos (~2-3h) ──
-.\run_benchmark.ps1
-
-# ── Testes ──
-python -m pytest tests/ -v
+ollama serve                                           # 8. terminal separado, manter aberto
+python -m src.llm.pipeline --n 5 --stratified --use-rf --clf-kind best   # 9. validar
+.\run_benchmark.ps1 -SeedsPerConfig 3 -Sizes 30,50     # 10. ablation do LLM
+python -m pytest tests/ -v                             # testes
 ```
 
-### Quando re-rodar cada passo
-
-| Mudança | Re-rodar |
-|---------|----------|
-| Adicionou novos CSVs em `data/raw/` | passos 3, 5, 6 |
-| Editou `src/data/preprocessor.py` | passos 3, 6 |
-| Adicionou descrição em `src/rag/sources/ids_classes.py` | passo 5 |
-| Editou `src/llm/text_converter.py` ou `prompts.py` | nenhum (efeito imediato na próxima run) |
-| Mudou Ollama para outro modelo | passo 8 (reiniciar `ollama serve`) |
-| Atualizou Sigma Rules / MITRE | `python -m src.rag.download` + passo 5 |
+| Mudou | Re-rodar |
+|-------|----------|
+| Novos CSVs em `data/raw/` | passos 3, 5, 6 |
+| `src/data/preprocessor.py` | passos 3, 6 |
+| `src/rag/sources/ids_classes.py` | passo 5 |
+| `src/llm/text_converter.py` ou `prompts.py` | nada (efeito imediato) |
+| Atualizar Sigma/MITRE | `src.rag.download` + passo 5 |
 
 ---
 
-## Próximas Etapas (Etapa 4)
+## Próximas Etapas
 
-- Bateria longa com múltiplos seeds e datasets separados (CIC-only, UNSW-only) para
-  resultados com significância estatística no manuscrito
-- Avaliação **humana** das explicações (20-30 casos) complementando o scoring automático
-  de `src/evaluation/explanation_quality.py`
-- `src/app/` — Interface Streamlit para demonstração interativa
-- Manuscrito final do TCC com a tabela comparativa de modelos e o ablation study do LLM
-
-> Já implementado nesta etapa: estudo comparativo de modelos (`src/ml/benchmark.py`),
-> módulo de métricas quantitativas com matriz de confusão / ROC / análise por classe
-> (`src/evaluation/metrics.py`) e scoring automático das explicações.
+- **Avaliação humana** das explicações (20-30 casos, rubrica) validando o proxy automático.
+- **Agregação por incidente** (re-processar do bruto mantendo IP/porta/tempo como chave
+  de agrupamento) — janela de fluxos em vez de fluxo único, para atacar o teto da
+  acurácia exata na raiz (ablation de granularidade: por-fluxo vs por-incidente).
+- **Verificador de fidelidade** das explicações (cruzar o que o LLM afirma vs os valores
+  reais do fluxo — detecção automática de alucinação).
+- `src/app/` — interface Streamlit de demonstração.
+- Manuscrito final do TCC.
 
 ---
 
