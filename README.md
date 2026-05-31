@@ -135,7 +135,8 @@ tcc/
 ├── tests/                          # 97 testes unitários (pytest)
 ├── data/                           # (raw/processed/chromadb/ml_models — NÃO versionados)
 ├── models/Modelfile                # Receita do GGUF no Ollama (modelo não versionado)
-├── outputs/                        # Resultados (ver "Formato de Saída")
+├── outputs/                        # Resultados atuais da v3 (ver "Formato de Saída")
+├── outputsold/                     # Resultados da v2 — arquivo histórico (evolução do projeto)
 ├── run_benchmark.ps1               # Ablation do LLM (7 configs × tamanhos × seeds)
 ├── run_ml_benchmark.ps1            # Estudo comparativo de ML
 ├── run_night.ps1                   # Orquestrador overnight (CIC + UNSW + high-benign)
@@ -489,6 +490,12 @@ Alguns bugs eram de **dados**, não de código — e detectá-los foi parte do t
 A v3 atacou os pontos fracos de rigor: a detecção passou de "amostras de 7-10
 registros" para "milhões de registros com cross-validation", e a contribuição central
 (as explicações) passou a ser **medida**.
+
+> **Arquivo histórico (`outputsold/`)**: preserva os resultados das execuções da **v2**
+> (formato antigo de saída — baterias, runs de triagem e comparativos). É mantido
+> versionado **de propósito**, como evidência da evolução do projeto ao longo do tempo
+> e da diversidade de experimentos realizados. Os resultados atuais (v3) ficam em
+> `outputs/`; os da v2, em `outputsold/`.
 
 ---
 

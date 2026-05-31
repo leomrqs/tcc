@@ -206,6 +206,13 @@ outputs/triage_runs/runs_index.jsonl
   summary (metricas achatadas), metrics (por classe + matriz de confusao),
   explanation_quality (qualidade das explicacoes), records (registros triados).
 
+outputsold/   [REPO]
+  Arquivo HISTORICO dos resultados da VERSAO 2 do projeto (formato de saida
+  antigo). Mantido versionado de proposito para evidenciar a evolucao do
+  trabalho ao longo do tempo e a diversidade de experimentos realizados.
+  Contem benchmarks/, ml_benchmark/, triage_runs/ e evaluation/ da v2.
+  Os resultados atuais (v3) estao em outputs/.
+
 
 ========================================================================
 6. TESTES  (tests/)  [REPO]
